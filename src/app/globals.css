@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --color-ink: #0a0d14;
+  --color-ink-2: #262b36;
+  --color-muted: #586070;
+  --color-subtle: #8b92a0;
+  --color-line: #e7e9ef;
+  --color-line-strong: #d4d8e1;
+  --color-paper: #ffffff;
+  --color-mist: #f6f7fa;
+  --color-haze: #eef2fb;
+  --color-success: #0f7a4f;
+  --color-danger: #c0262d;
+  --color-warning: #9a5b00;
+
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+
+  --shadow-soft: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px -12px rgb(16 24 40 / 0.1);
+  --shadow-lift: 0 2px 6px rgb(16 24 40 / 0.04), 0 28px 56px -24px rgb(16 24 40 / 0.22);
+  --shadow-accent: 0 10px 30px -12px rgb(var(--accent-rgb) / 0.55);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-marquee: marquee 40s linear infinite;
+}
+
+/* Accent palette (selected in Site settings). All pass WCAG AA on white. */
+:root,
+[data-accent="cobalt"] {
+  --accent: #1f45e0;
+  --accent-strong: #1734b0;
+  --accent-soft: #eef1fe;
+  --accent-rgb: 31 69 224;
+}
+[data-accent="electric"] {
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: #eff5ff;
+  --accent-rgb: 37 99 235;
+}
+[data-accent="indigo"] {
+  --accent: #4f46e5;
+  --accent-strong: #4338ca;
+  --accent-soft: #f0f0fe;
+  --accent-rgb: 79 70 229;
+}
+[data-accent="ocean"] {
+  --accent: #0369a1;
+  --accent-strong: #075985;
+  --accent-soft: #ebf6fc;
+  --accent-rgb: 3 105 161;
+}
+[data-accent="violet"] {
+  --accent: #6d28d9;
+  --accent-strong: #5b21b6;
+  --accent-soft: #f4effe;
+  --accent-rgb: 109 40 217;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(var(--accent-rgb) / 0.16);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] text-accent uppercase;
+  }
+
+  .hairline-grid {
+    background-image:
+      linear-gradient(to right, rgb(10 13 20 / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(10 13 20 / 0.045) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  .text-gradient-accent {
+    background: linear-gradient(100deg, var(--accent-strong) 0%, var(--accent) 45%, #5aa2ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glass {
+    @apply border border-white/60 bg-white/70 backdrop-blur-xl backdrop-saturate-150;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-paper shadow-soft;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full border border-line bg-paper px-3 py-1 text-[13px] leading-5 font-medium text-ink-2 transition-colors duration-200;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+  }
+
+  .field-input {
+    @apply block w-full rounded-xl border border-line-strong bg-paper px-3.5 py-2.5 text-[15px] text-ink shadow-[0_1px_0_rgb(16_24_40/0.02)] transition outline-none placeholder:text-subtle focus:border-accent focus:ring-4 focus:ring-accent/15 aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger/10 disabled:bg-mist disabled:text-muted;
+  }
+
+  .field-error {
+    @apply mt-1.5 text-[13px] text-danger;
+  }
+
+  .field-help {
+    @apply mt-1.5 text-[12.5px] text-muted;
+  }
+}
