@@ -15,7 +15,7 @@ export function About({ data }: { data: PortfolioData }) {
       <div className="grid gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)] lg:gap-16">
         <Reveal className="lg:sticky lg:top-28 lg:self-start">
           <div className="relative overflow-hidden rounded-3xl border border-line bg-gradient-to-br from-haze via-paper to-accent-soft p-2 shadow-soft">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[20px] bg-ink">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-[20px] bg-[#0a0d14] dark:bg-[#0e1628]">
               {profile.avatar_url ? (
                 <Image
                   src={profile.avatar_url}

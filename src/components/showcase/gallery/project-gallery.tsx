@@ -6,6 +6,8 @@ import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring, useTra
 import { Hand, MousePointerClick, RotateCcw, ScrollText } from "lucide-react";
 import { DetailsPanel } from "@/components/showcase/gallery/details-panel";
 import type { GalleryCard } from "@/components/showcase/gallery/gallery-scene";
+import { StudioBackdrop } from "@/components/showcase/gallery/studio-backdrop";
+import { useTheme } from "@/components/portfolio/theme-provider";
 import { cn } from "@/lib/utils/format";
 import type { PublicProject, SectionConfig } from "@/types/portfolio";
 
@@ -41,17 +43,22 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
   const panelHeading = useRef<HTMLHeadingElement>(null);
   const [near, setNear] = useState(false);
   const [visible, setVisible] = useState(false);
+  const featuredIndex = Math.max(0, projects.findIndex((p) => p.is_featured));
+  const [activeProject, setActiveProject] = useState<number>(featuredIndex);
   const [selected, setSelected] = useState<number | null>(null);
   const [resetToken, setResetToken] = useState(0);
   const [interacted, setInteracted] = useState(false);
   const reduced = useReducedMotion();
   const n = projects.length;
 
+  // Access the current theme so we can style the scene and UI elements appropriately.
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const { scrollYProgress } = useScroll({ target: track, offset: ["start start", "end end"] });
   const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 26, mass: 0.4, restDelta: 0.0005 });
   const headerOpacity = useTransform(progress, [0.85, 1], [1, 0]);
 
-  const featuredIndex = Math.max(0, projects.findIndex((p) => p.is_featured));
   const cards: GalleryCard[] = useMemo(
     () =>
       projects.map((p, i) => ({
@@ -80,10 +87,18 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
     };
   }, []);
 
-  const select = useCallback((index: number | null) => setSelected(index), []);
+  const select = useCallback((index: number | null) => {
+    if (index !== null) {
+      setActiveProject(index);
+      setSelected(index);
+    } else {
+      setSelected(null);
+    }
+  }, []);
+
   const markInteracted = useCallback(() => setInteracted(true), []);
 
-  // Closing returns focus to the project's button in the index.
+  // Closing returns focus to the project's button in the index without shifting the center card.
   const close = useCallback(() => {
     if (selected !== null) {
       const button = railButtons.current[selected];
@@ -93,9 +108,21 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
   }, [selected]);
 
   const step = useCallback(
-    (delta: number) => setSelected((current) => (((current ?? (delta > 0 ? -1 : 0)) + delta + n) % n)),
+    (delta: number) => {
+      setActiveProject((current) => {
+        const next = (current + delta + n) % n;
+        setSelected(next);
+        return next;
+      });
+    },
     [n],
   );
+
+  const resetView = useCallback(() => {
+    setResetToken((t) => t + 1);
+    setActiveProject(featuredIndex);
+    setSelected(null);
+  }, [featuredIndex]);
 
   // Escape closes the panel from anywhere while it is open.
   useEffect(() => {
@@ -118,20 +145,46 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
 
   const project = selected !== null ? projects[selected] : null;
 
+  // ── Theme-aware colours ────────────────────────────────────────────────────
+  // Light mode: seamless pure white matching the existing Hero and Skills sections.
+  // Dark mode: the existing immersive dark navy.
+  const eyebrowClass = isDark ? "text-sky-300" : "text-accent";
+  const eyebrowLine = isDark ? "bg-sky-300/60" : "bg-accent/60";
+
+  // Description text colour
+  const descClass = isDark ? "text-white/60" : "text-ink-2/70";
+
+  // Hint list text colour
+  const hintClass = isDark ? "text-white/55" : "text-ink/40";
+
+  // Rail button styles
+  const railBtnBase = "flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] font-medium backdrop-blur transition-all duration-200";
+  const railBtnActive = isDark
+    ? "border-sky-300/60 bg-sky-300/15 text-white"
+    : "border-accent/40 bg-accent-soft text-accent-strong shadow-soft";
+  const railBtnInactive = isDark
+    ? "border-white/12 bg-white/5 text-white/70 hover:border-white/25 hover:text-white"
+    : "border-line bg-paper/90 text-ink-2 hover:border-line-strong hover:bg-paper hover:text-ink shadow-soft";
+  const resetBtnClass = isDark
+    ? "flex shrink-0 items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3.5 py-1.5 text-[12.5px] font-medium text-white/75 backdrop-blur hover:border-white/25 hover:text-white"
+    : "flex shrink-0 items-center gap-2 rounded-full border border-line bg-paper/90 px-3.5 py-1.5 text-[12.5px] font-medium text-ink-2 backdrop-blur hover:border-line-strong hover:bg-paper hover:text-ink shadow-soft";
+
   return (
     <section
       id="projects"
       aria-labelledby="projects-heading"
       data-showcase-mode="gallery"
-      className="relative bg-[#070b16] text-white"
+      className={cn("relative", isDark ? "bg-[#080d19] text-white" : "bg-paper text-ink")}
     >
-      {/* Light → dark: the section opens into the immersive scene deliberately. */}
-      <div aria-hidden className="h-48 bg-[linear-gradient(to_bottom,var(--color-paper)_0%,#dfe5f2_18%,#26324f_62%,#070b16_100%)]" />
-
       <div ref={track} className="relative" style={{ height: compact ? "200vh" : "260vh" }}>
         <div
           ref={stage}
-          className="sticky top-0 h-[100svh] touch-pan-y overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-sky-300/60 focus-visible:ring-inset"
+          className={cn(
+            "sticky top-0 h-[100svh] touch-pan-y overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-inset",
+            isDark
+              ? "bg-[#080d19] focus-visible:ring-sky-300/60"
+              : "bg-paper focus-visible:ring-accent",
+          )}
           role="region"
           aria-roledescription="3D project gallery"
           aria-label={`${config.title}. Use the project list or the left and right arrow keys to select a project.`}
@@ -139,12 +192,23 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
           onKeyDown={onStageKey}
           data-testid="gallery-stage"
         >
+          {/* Theme-aware animated particle system and ambient lighting (DOTS ONLY, ZERO LINES) */}
+          <StudioBackdrop
+            selected={activeProject}
+            total={n}
+            reduced={Boolean(reduced)}
+            compact={compact}
+            active={visible}
+            isDark={isDark}
+          />
+
           <div className="absolute inset-0" data-testid="gallery-canvas">
             {near && (
               <SceneBoundary onError={onFailure}>
                 <GalleryScene
                   cards={cards}
                   featuredIndex={featuredIndex}
+                  activeProject={activeProject}
                   progress={progress}
                   selected={selected}
                   onSelect={select}
@@ -154,16 +218,19 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
                   compact={compact}
                   animate={!reduced}
                   stateTarget={stage}
+                  theme={theme}
                 />
               </SceneBoundary>
             )}
           </div>
 
-          {/* Edge vignette keeps overlay text legible without dimming the scene centre. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_45%,transparent_55%,rgb(7_11_22/0.85))]"
-          />
+          {/* Edge vignette in dark mode keeps overlay text legible without dimming the scene centre. Omitted in light mode for pure white clarity. */}
+          {isDark && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_70%_at_50%_45%,transparent_55%,rgb(7_11_22/0.85))]"
+            />
+          )}
 
           {/* Heading and hints */}
           <motion.div
@@ -172,23 +239,27 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
           >
             <div className="container-page">
               {config.eyebrow && (
-                <p className="inline-flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] text-sky-300 uppercase">
-                  <span aria-hidden className="h-px w-6 bg-sky-300/60" />
+                <p className={cn("inline-flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] uppercase", eyebrowClass)}>
+                  <span aria-hidden className={cn("h-px w-6", eyebrowLine)} />
                   {config.eyebrow}
                 </p>
               )}
               <h2
                 id="projects-heading"
-                className="mt-3 max-w-xl text-[clamp(2rem,1.2rem+2.6vw,3.4rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance"
+                className={cn(
+                  "mt-3 max-w-xl text-[clamp(2rem,1.2rem+2.6vw,3.4rem)] leading-[1.02] font-semibold tracking-[-0.04em] text-balance",
+                  isDark ? "text-white" : "text-ink",
+                )}
               >
                 {config.title}
               </h2>
               {config.description && !compact && (
-                <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/60">{config.description}</p>
+                <p className={cn("mt-3 max-w-md text-[15px] leading-relaxed", descClass)}>{config.description}</p>
               )}
               <ul
                 className={cn(
-                  "mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] text-white/55 transition-opacity duration-700",
+                  "mt-5 flex flex-wrap gap-x-5 gap-y-2 text-[12.5px] transition-opacity duration-700",
+                  hintClass,
                   interacted && "opacity-0",
                 )}
                 aria-label="How to explore"
@@ -231,6 +302,7 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
                     total={n}
                     onClose={close}
                     onStep={step}
+                    theme={theme}
                   />
                 </motion.div>
               )}
@@ -251,30 +323,26 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
                       railButtons.current[i] = el;
                     }}
                     type="button"
-                    aria-pressed={selected === i}
+                    data-cursor="chip"
+                    aria-pressed={activeProject === i}
                     onClick={() => {
                       setInteracted(true);
-                      setSelected((current) => (current === i ? null : i));
+                      select(i);
                     }}
-                    className={cn(
-                      "flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] font-medium backdrop-blur transition-colors",
-                      selected === i
-                        ? "border-sky-300/60 bg-sky-300/15 text-white"
-                        : "border-white/12 bg-white/5 text-white/70 hover:border-white/25 hover:text-white",
-                    )}
+                    className={cn(railBtnBase, activeProject === i ? railBtnActive : railBtnInactive)}
                   >
-                    <span className="font-mono text-[11px] text-white/45">{String(i + 1).padStart(2, "0")}</span>
+                    <span className={cn("font-mono text-[11px]", isDark ? "text-white/45" : "text-ink/35")}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
                     <span className="max-w-[11rem] truncate">{p.title}</span>
                   </button>
                 ))}
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setResetToken((t) => t + 1);
-                  setSelected(null);
-                }}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3.5 py-1.5 text-[12.5px] font-medium text-white/75 backdrop-blur hover:border-white/25 hover:text-white"
+                data-cursor="button"
+                onClick={resetView}
+                className={resetBtnClass}
               >
                 <RotateCcw className="size-3.5" aria-hidden /> Reset view
               </button>
@@ -282,8 +350,6 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
           </div>
         </div>
       </div>
-
-      <div aria-hidden className="h-48 bg-[linear-gradient(to_bottom,#070b16_0%,#26324f_38%,#dfe5f2_82%,var(--color-paper)_100%)]" />
     </section>
   );
 }

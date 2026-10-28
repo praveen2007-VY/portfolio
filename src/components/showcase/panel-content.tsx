@@ -86,7 +86,7 @@ export function PanelContent({
                 key={tech}
                 className={cn(
                   "rounded-md px-2 py-1 font-mono text-[11.5px] text-ink-2",
-                  split ? "border border-white/70 bg-white/70" : "bg-mist",
+                  split ? "border border-line/60 bg-paper/70 text-ink-2" : "bg-mist",
                 )}
               >
                 {tech}

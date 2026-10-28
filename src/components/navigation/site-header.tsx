@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
 import { Download, Menu, X } from "lucide-react";
 import { LogoMark } from "@/components/navigation/logo-mark";
+import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { useActiveSection } from "@/components/navigation/use-active-section";
 import { buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/utils/format";
@@ -66,7 +67,7 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
         className={cn(
           "transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300",
           scrolled || open
-            ? "border-b border-line/80 bg-white/75 shadow-[0_8px_30px_-20px_rgb(16_24_40/0.25)] backdrop-blur-xl backdrop-saturate-150"
+            ? "border-b border-line/80 bg-paper/80 shadow-[0_8px_30px_-20px_rgb(16_24_40/0.25)] backdrop-blur-xl backdrop-saturate-150"
             : "border-b border-transparent",
         )}
       >
@@ -91,7 +92,7 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-0 rounded-lg bg-ink/[0.05]"
+                      className="absolute inset-0 rounded-lg bg-ink/[0.05] dark:bg-white/[0.08]"
                       transition={{ type: "spring", stiffness: 420, damping: 36 }}
                     />
                   )}
@@ -100,7 +101,10 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
             })}
           </ul>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Theme toggle — always visible */}
+            <ThemeToggle />
+
             {hasResume && (
               <a href="/resume" className={buttonClasses("primary", "sm", "hidden h-9 px-3.5 sm:inline-flex")}>
                 <Download className="size-3.5" aria-hidden />
@@ -110,7 +114,7 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
             <button
               ref={toggleRef}
               type="button"
-              className="grid size-10 place-items-center rounded-xl text-ink hover:bg-mist lg:hidden"
+              className="grid size-10 place-items-center rounded-xl text-ink hover:bg-mist dark:hover:bg-white/10 lg:hidden"
               aria-expanded={open}
               aria-controls={menuId}
               aria-label={open ? "Close menu" : "Open menu"}
@@ -126,7 +130,7 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
         id={menuId}
         ref={menuRef}
         hidden={!open}
-        className="h-[calc(100dvh-4rem)] overflow-y-auto border-b border-line bg-white/95 backdrop-blur-xl lg:hidden"
+        className="h-[calc(100dvh-4rem)] overflow-y-auto border-b border-line bg-paper/95 backdrop-blur-xl lg:hidden"
       >
         <ul className="container-page flex flex-col py-4">
           {links.map((link, index) => (

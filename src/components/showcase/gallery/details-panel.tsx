@@ -4,7 +4,7 @@ import Link from "next/link";
 import { forwardRef } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
 import { GitHubIcon } from "@/components/ui/icons";
-import { formatDateRange } from "@/lib/utils/format";
+import { formatDateRange, cn } from "@/lib/utils/format";
 import type { PublicProject } from "@/types/portfolio";
 
 type DetailsPanelProps = {
@@ -14,30 +14,49 @@ type DetailsPanelProps = {
   total: number;
   onClose: () => void;
   onStep: (delta: number) => void;
+  /** "light" | "dark" — adjusts panel styling to match the scene theme. */
+  theme?: "light" | "dark";
 };
 
 /** Accessible HTML details for the selected card (the 3D card itself stays concise). */
 export const DetailsPanel = forwardRef<HTMLHeadingElement, DetailsPanelProps>(function DetailsPanel(
-  { project, basePath, position, total, onClose, onStep },
+  { project, basePath, position, total, onClose, onStep, theme = "dark" },
   headingRef,
 ) {
+  const isDark = theme === "dark";
   const dates = formatDateRange(project.start_date, project.end_date);
   const headingId = `gallery-details-${project.id}`;
+
   return (
     <aside
       aria-labelledby={headingId}
       data-testid="gallery-details"
-      className="rounded-2xl border border-white/12 bg-[#0b1226]/80 p-6 text-white shadow-[0_40px_80px_-30px_rgb(0_0_0/0.8)] backdrop-blur-xl"
+      className={cn(
+        "rounded-2xl border p-6 shadow-[0_40px_80px_-30px_rgb(0_0_0/0.5)] backdrop-blur-xl",
+        isDark
+          ? "border-white/12 bg-[#0b1226]/80 text-white"
+          : "border-line/60 bg-paper/90 text-ink",
+      )}
     >
       <div className="flex items-start justify-between gap-4">
-        <p className="font-mono text-[11.5px] tracking-[0.18em] text-sky-300 uppercase">
+        <p
+          className={cn(
+            "font-mono text-[11.5px] tracking-[0.18em] uppercase",
+            isDark ? "text-sky-300" : "text-accent",
+          )}
+        >
           {project.category ?? "Project"}
         </p>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close project details"
-          className="-mt-1.5 -mr-2 grid size-8 shrink-0 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white"
+          className={cn(
+            "-mt-1.5 -mr-2 grid size-8 shrink-0 place-items-center rounded-lg",
+            isDark
+              ? "text-white/70 hover:bg-white/10 hover:text-white"
+              : "text-muted hover:bg-mist hover:text-ink",
+          )}
         >
           <X className="size-4" aria-hidden />
         </button>
@@ -50,12 +69,26 @@ export const DetailsPanel = forwardRef<HTMLHeadingElement, DetailsPanelProps>(fu
       >
         {project.title}
       </h3>
-      {dates && <p className="mt-1 font-mono text-[12px] text-white/50">{dates}</p>}
-      {project.summary && <p className="mt-4 text-[15px] leading-relaxed text-white/75">{project.summary}</p>}
+      {dates && (
+        <p className={cn("mt-1 font-mono text-[12px]", isDark ? "text-white/50" : "text-muted")}>
+          {dates}
+        </p>
+      )}
+      {project.summary && (
+        <p className={cn("mt-4 text-[15px] leading-relaxed", isDark ? "text-white/75" : "text-ink-2")}>
+          {project.summary}
+        </p>
+      )}
       {project.tech_stack.length > 0 && (
         <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Technologies">
           {project.tech_stack.map((tech) => (
-            <li key={tech} className="rounded-md bg-white/8 px-2 py-1 font-mono text-[11.5px] text-white/85">
+            <li
+              key={tech}
+              className={cn(
+                "rounded-md px-2 py-1 font-mono text-[11.5px]",
+                isDark ? "bg-white/8 text-white/85" : "bg-accent/8 text-accent-strong",
+              )}
+            >
               {tech}
             </li>
           ))}
@@ -73,7 +106,12 @@ export const DetailsPanel = forwardRef<HTMLHeadingElement, DetailsPanelProps>(fu
             href={project.repo_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/15 px-3.5 text-sm font-medium text-white/90 hover:bg-white/10"
+            className={cn(
+              "inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium transition-colors",
+              isDark
+                ? "border-white/15 text-white/90 hover:bg-white/10"
+                : "border-line-strong text-ink-2 hover:bg-mist hover:text-ink",
+            )}
           >
             <GitHubIcon size={15} /> GitHub
           </a>
@@ -83,14 +121,24 @@ export const DetailsPanel = forwardRef<HTMLHeadingElement, DetailsPanelProps>(fu
             href={project.demo_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/15 px-3.5 text-sm font-medium text-white/90 hover:bg-white/10"
+            className={cn(
+              "inline-flex h-10 items-center gap-2 rounded-xl border px-3.5 text-sm font-medium transition-colors",
+              isDark
+                ? "border-white/15 text-white/90 hover:bg-white/10"
+                : "border-line-strong text-ink-2 hover:bg-mist hover:text-ink",
+            )}
           >
             <ExternalLink className="size-3.5" aria-hidden /> Live demo
           </a>
         )}
       </div>
       {total > 1 && (
-        <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4 text-[12.5px] text-white/55">
+        <div
+          className={cn(
+            "mt-6 flex items-center justify-between border-t pt-4 text-[12.5px]",
+            isDark ? "border-white/10 text-white/55" : "border-line text-muted",
+          )}
+        >
           <span className="font-mono tabular-nums">
             {String(position + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
           </span>
@@ -99,7 +147,10 @@ export const DetailsPanel = forwardRef<HTMLHeadingElement, DetailsPanelProps>(fu
               type="button"
               onClick={() => onStep(-1)}
               aria-label="Previous project"
-              className="grid size-8 place-items-center rounded-lg hover:bg-white/10 hover:text-white"
+              className={cn(
+                "grid size-8 place-items-center rounded-lg",
+                isDark ? "hover:bg-white/10 hover:text-white" : "hover:bg-mist hover:text-ink",
+              )}
             >
               <ChevronLeft className="size-4" aria-hidden />
             </button>
@@ -107,7 +158,10 @@ export const DetailsPanel = forwardRef<HTMLHeadingElement, DetailsPanelProps>(fu
               type="button"
               onClick={() => onStep(1)}
               aria-label="Next project"
-              className="grid size-8 place-items-center rounded-lg hover:bg-white/10 hover:text-white"
+              className={cn(
+                "grid size-8 place-items-center rounded-lg",
+                isDark ? "hover:bg-white/10 hover:text-white" : "hover:bg-mist hover:text-ink",
+              )}
             >
               <ChevronRight className="size-4" aria-hidden />
             </button>

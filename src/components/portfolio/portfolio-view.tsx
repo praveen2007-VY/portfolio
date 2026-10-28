@@ -11,6 +11,7 @@ import { Journey } from "@/components/sections/journey";
 import { Projects } from "@/components/sections/projects";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { Skills } from "@/components/sections/skills";
+import { AmbientBackground } from "@/components/portfolio/ambient-background";
 import { initials } from "@/lib/utils/format";
 import type { PortfolioData, SectionKey } from "@/types/portfolio";
 
@@ -37,9 +38,10 @@ export function PortfolioView({ data, mode }: { data: PortfolioData; mode: "publ
   return (
     <MotionProvider reduced={data.settings.animation_level === "reduced"}>
       <div data-accent={data.settings.accent} className="relative overflow-x-clip">
+        <AmbientBackground />
         <a
           href="#main"
-          className="sr-only z-[70] rounded-lg bg-ink px-4 py-2 text-sm text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+          className="sr-only z-[70] rounded-lg bg-accent px-4 py-2 text-sm text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
         >
           Skip to content
         </a>

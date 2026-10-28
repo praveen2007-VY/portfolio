@@ -1,3 +1,7 @@
+"use client";
+
+import { useRef } from "react";
+import { motion, useScroll } from "framer-motion";
 import { Briefcase, GraduationCap, MapPin } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { EmptyState, Section } from "@/components/ui/section";
@@ -6,9 +10,14 @@ import type { PortfolioData } from "@/types/portfolio";
 
 export function Journey({ data }: { data: PortfolioData }) {
   const { experiences, education, settings } = data;
+  const timelineRef = useRef<HTMLOListElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ["start 75%", "end 50%"],
+  });
 
   return (
-    <Section id="experience" config={settings.sections.experience} tone="mist">
+    <Section id="experience" config={settings.sections.experience} tone="paper">
       <div className="grid gap-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-14">
         <div>
           <h3 className="mb-6 flex items-center gap-2 text-sm font-semibold text-ink">
@@ -17,21 +26,33 @@ export function Journey({ data }: { data: PortfolioData }) {
           {experiences.length === 0 ? (
             <EmptyState title="Experience coming soon" />
           ) : (
-            <ol className="relative space-y-5 before:absolute before:top-2 before:bottom-2 before:left-[11px] before:w-px before:bg-gradient-to-b before:from-accent/50 before:via-line-strong before:to-transparent">
+            <ol ref={timelineRef} className="relative space-y-5">
+              {/* Animated scroll-linked timeline rail */}
+              <div
+                aria-hidden
+                className="absolute top-3 bottom-3 left-[11px] w-[2px] overflow-hidden rounded-full bg-line/70 dark:bg-white/10"
+              >
+                <motion.div
+                  style={{ scaleY: scrollYProgress }}
+                  className="h-full w-full origin-top bg-gradient-to-b from-accent via-[#3b82f6] to-[#60a5fa] shadow-[0_0_10px_rgba(31,69,224,0.45)] dark:from-sky-400 dark:via-blue-500 dark:to-cyan-400"
+                />
+              </div>
+
               {experiences.map((item, index) => (
-                <li key={item.id} className="relative pl-10">
+                <li key={item.id} className="group relative pl-10">
+                  {/* Milestone glowing node */}
                   <span
                     aria-hidden
-                    className="absolute top-6 left-0 grid size-6 place-items-center rounded-full border border-accent/30 bg-paper"
+                    className="absolute top-6 left-0 z-10 grid size-6 place-items-center rounded-full border border-accent/40 bg-paper transition-all duration-300 group-hover:scale-110 group-hover:border-accent group-hover:shadow-[0_0_12px_rgba(31,69,224,0.35)] dark:border-sky-400/40 dark:bg-paper dark:group-hover:border-sky-400"
                   >
-                    <span className="size-2 rounded-full bg-accent" />
+                    <span className="size-2 rounded-full bg-accent transition-transform duration-300 group-hover:scale-125 dark:bg-sky-400" />
                   </span>
-                  <Reveal delay={index * 0.05}>
-                    <article className="card group p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift sm:p-7">
+                  <Reveal delay={index * 0.06}>
+                    <article className="card p-6 transition-all duration-500 hover:-translate-y-1 hover:border-accent/35 hover:shadow-lift dark:hover:border-sky-400/30 sm:p-7">
                       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
                         <div>
                           <h4 className="text-lg font-semibold tracking-tight text-ink">{item.role}</h4>
-                          <p className="mt-0.5 text-[15px] font-medium text-accent">{item.organization}</p>
+                          <p className="mt-0.5 text-[15px] font-medium text-accent dark:text-sky-400">{item.organization}</p>
                         </div>
                         <p className="rounded-full bg-mist px-3 py-1 font-mono text-[12px] text-ink-2">
                           {formatDateRange(item.start_date, item.end_date, item.is_current)}
@@ -48,7 +69,7 @@ export function Journey({ data }: { data: PortfolioData }) {
                         <ul className="mt-4 space-y-2">
                           {item.highlights.map((h, i) => (
                             <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-ink-2">
-                              <span aria-hidden className="mt-[10px] h-px w-3 shrink-0 bg-accent" />
+                              <span aria-hidden className="mt-[10px] h-px w-3 shrink-0 bg-accent dark:bg-sky-400" />
                               {h}
                             </li>
                           ))}
@@ -57,7 +78,7 @@ export function Journey({ data }: { data: PortfolioData }) {
                       {item.technologies.length > 0 && (
                         <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Technologies">
                           {item.technologies.map((t) => (
-                            <li key={t} className="chip bg-mist py-0.5 text-[12px]">
+                            <li key={t} className="chip bg-mist py-0.5 text-[12px] transition-colors hover:border-accent/30 hover:bg-accent-soft">
                               {t}
                             </li>
                           ))}
@@ -73,7 +94,7 @@ export function Journey({ data }: { data: PortfolioData }) {
 
         <div>
           <h3 className="mb-6 flex items-center gap-2 text-sm font-semibold text-ink">
-            <GraduationCap className="size-4 text-accent" aria-hidden /> Education
+            <GraduationCap className="size-4 text-accent dark:text-sky-400" aria-hidden /> Education
           </h3>
           {education.length === 0 ? (
             <EmptyState title="Education details coming soon" />
@@ -81,10 +102,10 @@ export function Journey({ data }: { data: PortfolioData }) {
             <div className="space-y-5">
               {education.map((item, index) => (
                 <Reveal key={item.id} delay={0.08 + index * 0.05}>
-                  <article className="relative overflow-hidden rounded-2xl border border-line bg-paper p-6 shadow-soft sm:p-7">
+                  <article className="group relative overflow-hidden rounded-2xl border border-line bg-paper p-6 shadow-soft transition-all duration-500 hover:-translate-y-1 hover:border-accent/35 hover:shadow-lift dark:hover:border-sky-400/30 sm:p-7">
                     <div
                       aria-hidden
-                      className="absolute -top-16 -right-16 size-48 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.12),transparent_70%)]"
+                      className="absolute -top-16 -right-16 size-48 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.12),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                     />
                     <p className="font-mono text-[12px] text-muted">
                       {formatDateRange(item.start_date, item.end_date)}
@@ -114,7 +135,7 @@ export function Journey({ data }: { data: PortfolioData }) {
                         <p className="font-mono text-[11px] tracking-[0.16em] text-muted uppercase">Coursework</p>
                         <ul className="mt-3 flex flex-wrap gap-1.5">
                           {item.coursework.map((c) => (
-                            <li key={c} className="chip py-0.5 text-[12px]">
+                            <li key={c} className="chip py-0.5 text-[12px] transition-colors hover:border-accent/30 hover:bg-accent-soft">
                               {c}
                             </li>
                           ))}

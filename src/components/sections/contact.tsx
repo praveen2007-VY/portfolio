@@ -26,9 +26,9 @@ export function Contact({ data }: { data: PortfolioData }) {
             <a
               key={label}
               href={href}
-              className="group flex items-center gap-4 rounded-2xl border border-line bg-paper p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-soft"
+              className="group flex items-center gap-4 rounded-2xl border border-line bg-paper p-5 transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:shadow-lift dark:hover:border-sky-400/35"
             >
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent transition-colors group-hover:bg-accent group-hover:text-white">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-white dark:group-hover:bg-sky-400 dark:group-hover:text-[#070b16]">
                 <Icon className="size-5" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
@@ -36,15 +36,15 @@ export function Contact({ data }: { data: PortfolioData }) {
                 <span className="block truncate text-[15.5px] font-medium text-ink">{value}</span>
               </span>
               <ArrowUpRight
-                className="size-4 text-subtle transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent"
+                className="size-4 text-subtle transition-all duration-300 group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:text-accent dark:group-hover:text-sky-400"
                 aria-hidden
               />
             </a>
           ))}
           {profile.location && (
-            <div className="flex items-center gap-4 rounded-2xl border border-line bg-mist/60 p-5">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-paper text-ink-2">
-                <MapPin className="size-5" aria-hidden />
+            <div className="flex items-center gap-4 rounded-2xl border border-line bg-mist/60 p-5 dark:bg-white/5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-paper text-ink-2 shadow-soft">
+                <MapPin className="size-5 text-accent dark:text-sky-400" aria-hidden />
               </span>
               <span>
                 <span className="block text-[12.5px] text-muted">Based in</span>
@@ -60,7 +60,7 @@ export function Contact({ data }: { data: PortfolioData }) {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-xl border border-line bg-paper px-4 py-3 text-[14px] font-medium text-ink-2 transition-colors hover:border-ink/20 hover:text-ink"
+                  className="flex items-center gap-2.5 rounded-xl border border-line bg-paper px-4 py-3 text-[14px] font-medium text-ink-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/35 hover:text-ink hover:shadow-soft dark:hover:border-sky-400/30"
                 >
                   <Icon size={16} />
                   {label}

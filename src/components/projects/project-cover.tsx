@@ -29,7 +29,7 @@ export function ProjectCover({
   }
 
   return (
-    <div aria-hidden className="absolute inset-0 overflow-hidden bg-ink">
+    <div aria-hidden className="absolute inset-0 overflow-hidden bg-[#0a0d14] dark:bg-[#0c1426]">
       <div className="hairline-grid absolute inset-0 opacity-30 invert" />
       <div className="absolute -top-1/3 -right-1/4 size-[85%] rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.85),transparent_62%)] blur-2xl transition-transform duration-[1200ms] ease-out group-hover:translate-x-[-6%] group-hover:translate-y-[6%]" />
       <div className="absolute -bottom-1/3 -left-1/4 size-[70%] rounded-full bg-[radial-gradient(circle,rgb(90_162_255/0.45),transparent_65%)] blur-2xl" />

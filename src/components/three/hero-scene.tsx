@@ -16,6 +16,7 @@ export type HeroSceneProps = {
   quality: "high" | "low";
   animate: boolean;
   active: boolean;
+  theme?: "light" | "dark";
 };
 
 type PointerRef = React.RefObject<{ x: number; y: number }>;
@@ -94,10 +95,11 @@ function Orbit({ radius, tilt, speed, color, animate }: {
   );
 }
 
-function Sculpture({ accent, quality, animate }: { accent: string; quality: "high" | "low"; animate: boolean }) {
+function Sculpture({ accent, quality, animate, theme = "light" }: { accent: string; quality: "high" | "low"; animate: boolean; theme?: "light" | "dark" }) {
+  const isDark = theme === "dark";
   const shellEdges = useMemo(() => new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.78, 1)), []);
   const core = useRef<THREE.Mesh>(null);
-  const background = useMemo(() => new THREE.Color("#f4f7ff"), []);
+  const background = useMemo(() => new THREE.Color(isDark ? "#0d1220" : "#f4f7ff"), [isDark]);
 
   useFrame((state, delta) => {
     if (!core.current || !animate) return;
@@ -115,7 +117,7 @@ function Sculpture({ accent, quality, animate }: { accent: string; quality: "hig
             samples={6}
             resolution={512}
             thickness={0.55}
-            roughness={0.1}
+            roughness={isDark ? 0.08 : 0.1}
             transmission={1}
             ior={1.3}
             chromaticAberration={0.02}
@@ -125,17 +127,17 @@ function Sculpture({ accent, quality, animate }: { accent: string; quality: "hig
             temporalDistortion={animate ? 0.08 : 0}
             clearcoat={1}
             attenuationDistance={2.4}
-            attenuationColor="#dfe8ff"
-            color="#f7f9ff"
+            attenuationColor={isDark ? "#284488" : "#dfe8ff"}
+            color={isDark ? "#dbeafe" : "#f7f9ff"}
           />
         ) : (
           <meshPhysicalMaterial
-            color="#eef3ff"
+            color={isDark ? "#203060" : "#eef3ff"}
             roughness={0.08}
-            metalness={0}
+            metalness={0.1}
             clearcoat={1}
             transparent
-            opacity={0.42}
+            opacity={isDark ? 0.6 : 0.42}
           />
         )}
       </mesh>
@@ -146,17 +148,18 @@ function Sculpture({ accent, quality, animate }: { accent: string; quality: "hig
       </mesh>
 
       <lineSegments geometry={shellEdges}>
-        <lineBasicMaterial color={accent} transparent opacity={0.22} />
+        <lineBasicMaterial color={accent} transparent opacity={isDark ? 0.35 : 0.22} />
       </lineSegments>
 
       <Orbit radius={2.15} tilt={[1.2, 0.2, 0]} speed={0.5} color={accent} animate={animate} />
-      <Orbit radius={2.45} tilt={[0.35, -0.9, 0.4]} speed={-0.35} color="#5aa2ff" animate={animate} />
+      <Orbit radius={2.45} tilt={[0.35, -0.9, 0.4]} speed={-0.35} color={isDark ? "#38bdf8" : "#5aa2ff"} animate={animate} />
     </>
   );
 }
 
-export default function HeroScene({ accent, quality, animate, active }: HeroSceneProps) {
+export default function HeroScene({ accent, quality, animate, active, theme = "light" }: HeroSceneProps) {
   const pointer = useWindowPointer();
+  const isDark = theme === "dark";
 
   return (
     <Canvas
@@ -167,13 +170,13 @@ export default function HeroScene({ accent, quality, animate, active }: HeroScen
       style={{ pointerEvents: "none" }}
       aria-hidden
     >
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[4, 5, 6]} intensity={1.4} />
-      <directionalLight position={[-5, -2, -4]} intensity={0.5} color="#9db8ff" />
+      <ambientLight intensity={isDark ? 0.45 : 0.55} color={isDark ? "#a0b8ff" : "#ffffff"} />
+      <directionalLight position={[4, 5, 6]} intensity={isDark ? 1.6 : 1.4} />
+      <directionalLight position={[-5, -2, -4]} intensity={isDark ? 0.8 : 0.5} color={isDark ? "#38bdf8" : "#9db8ff"} />
 
       <Environment resolution={quality === "high" ? 256 : 64}>
         <Lightformer form="rect" intensity={2.4} position={[0, 4, 3]} scale={[8, 2, 1]} />
-        <Lightformer form="rect" intensity={1.4} position={[-5, 0, 2]} scale={[2, 6, 1]} color="#cfe0ff" />
+        <Lightformer form="rect" intensity={1.4} position={[-5, 0, 2]} scale={[2, 6, 1]} color={isDark ? "#93c5fd" : "#cfe0ff"} />
         <Lightformer form="ring" intensity={1.8} position={[4, 1, -3]} scale={3} color={accent} />
         <Lightformer form="rect" intensity={0.8} position={[0, -4, 2]} scale={[8, 1, 1]} />
       </Environment>
@@ -186,19 +189,19 @@ export default function HeroScene({ accent, quality, animate, active }: HeroScen
           floatIntensity={0.6}
           floatingRange={[-0.08, 0.08]}
         >
-          <Sculpture accent={accent} quality={quality} animate={animate} />
+          <Sculpture accent={accent} quality={quality} animate={animate} theme={theme} />
         </Float>
       </Rig>
 
       <ContactShadows
         position={[0, -2.35, 0]}
-        opacity={0.22}
+        opacity={isDark ? 0.38 : 0.22}
         scale={9}
         blur={2.8}
         far={4}
         resolution={quality === "high" ? 512 : 256}
         frames={animate ? Infinity : 1}
-        color="#1b2a55"
+        color={isDark ? "#030612" : "#1b2a55"}
       />
     </Canvas>
   );

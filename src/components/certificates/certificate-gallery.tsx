@@ -46,19 +46,19 @@ export function CertificateGallery({ certificates }: { certificates: PublicCerti
                 onClick={() => setFilter(category)}
                 className={cn(
                   "relative rounded-full px-4 py-2 text-[13.5px] font-medium transition-colors",
-                  active ? "text-white" : "text-ink-2 hover:bg-mist",
+                  active ? "text-white dark:text-[#0a0d14]" : "text-ink-2 hover:bg-mist",
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="cert-filter"
-                    className="absolute inset-0 rounded-full bg-ink"
+                    className="absolute inset-0 rounded-full bg-ink dark:bg-white"
                     transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   />
                 )}
                 <span className="relative">
                   {category}
-                  <span className={cn("ml-1.5 font-mono text-[11px]", active ? "text-white/60" : "text-subtle")}>
+                  <span className={cn("ml-1.5 font-mono text-[11px]", active ? "text-white/60 dark:text-[#0a0d14]/70" : "text-subtle")}>
                     {count}
                   </span>
                 </span>
@@ -70,14 +70,15 @@ export function CertificateGallery({ certificates }: { certificates: PublicCerti
 
       <motion.ul layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence mode="popLayout" initial={false}>
-          {visible.map((cert) => (
+          {visible.map((cert, index) => (
             <motion.li
               layout
               key={cert.id}
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "0px 0px -8% 0px" }}
               exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.55, delay: (index % 3) * 0.07, ease: [0.16, 1, 0.3, 1] }}
             >
               <CertificateCard cert={cert} onView={() => open(cert)} />
             </motion.li>
@@ -149,7 +150,7 @@ export function CertificateGallery({ certificates }: { certificates: PublicCerti
 function CertificateCard({ cert, onView }: { cert: PublicCertificate; onView: () => void }) {
   const hasFile = Boolean(cert.image_url || cert.pdf_url);
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper transition-all duration-500 hover:-translate-y-1 hover:border-accent/25 hover:shadow-lift">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-lift dark:hover:border-sky-400/35">
       <div className="relative aspect-[16/10] overflow-hidden border-b border-line bg-gradient-to-br from-haze to-paper">
         {cert.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- served through a signed-URL redirect

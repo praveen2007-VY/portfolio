@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
 import { MotionProvider } from "@/components/portfolio/motion-provider";
 import { PreviewBanner } from "@/components/portfolio/notices";
+import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { ProjectCover } from "@/components/projects/project-cover";
 import { buttonClasses } from "@/components/ui/button";
 import { GitHubIcon } from "@/components/ui/icons";
@@ -21,14 +22,17 @@ export function ProjectDetail({ data, project, mode }: Props) {
   return (
     <MotionProvider reduced={data.settings.animation_level === "reduced"}>
       <div data-accent={data.settings.accent} className="min-h-dvh overflow-x-clip">
-        <header className="sticky top-0 z-40 border-b border-line/80 bg-white/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-40 border-b border-line/80 bg-paper/80 backdrop-blur-xl">
           <div className="container-page flex h-16 items-center justify-between">
             <Link href={`${base}/#projects`} className={buttonClasses("ghost", "sm", "-ml-3")}>
               <ArrowLeft className="size-4" aria-hidden /> All projects
             </Link>
-            <Link href={`${base}/`} className="text-[15px] font-semibold tracking-tight text-ink">
-              {data.profile.full_name}
-            </Link>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Link href={`${base}/`} className="text-[15px] font-semibold tracking-tight text-ink">
+                {data.profile.full_name}
+              </Link>
+            </div>
           </div>
         </header>
 

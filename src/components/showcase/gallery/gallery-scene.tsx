@@ -25,6 +25,7 @@ export type GalleryCard = CardArt & { id: string };
 export type GallerySceneProps = {
   cards: GalleryCard[];
   featuredIndex: number;
+  activeProject?: number;
   /** Smoothed scroll progress of the section (0–1) — drives the camera path. */
   progress: MotionValue<number>;
   selected: number | null;
@@ -34,11 +35,15 @@ export type GallerySceneProps = {
   running: boolean;
   compact: boolean;
   animate: boolean;
+  /** "light" | "dark" — controls scene lighting, background and floor colours. */
+  theme?: "light" | "dark";
   /** Element that receives a small `data-scene-state` snapshot (for tests and debugging). */
   stateTarget: React.RefObject<HTMLElement | null>;
 };
 
-export const SCENE_BG = "#070b16";
+export const SCENE_BG_DARK = "#080d19";
+export const SCENE_BG_LIGHT = "#ffffff";
+export const SCENE_BG = SCENE_BG_DARK; // kept for backward compat
 const PIVOT_Z = -1;
 const FLOOR_Y = -1.75;
 const { damp } = THREE.MathUtils;
@@ -86,57 +91,70 @@ type GestureState = {
 };
 
 function Gallery(props: GallerySceneProps) {
-  const { cards, featuredIndex, compact, animate } = props;
+  const { cards, featuredIndex, activeProject, compact, animate, theme = "dark", selected } = props;
+  const isDark = theme === "dark";
   const { gl, camera, size } = useThree();
 
-  const slots = useMemo(() => computeLayout(cards.length, featuredIndex, compact), [cards.length, featuredIndex, compact]);
+  const currentActive = activeProject ?? (selected !== null ? selected : featuredIndex);
+  const slots = useMemo(
+    () => computeLayout(cards.length, currentActive, compact),
+    [cards.length, currentActive, compact],
+  );
   const extent = useMemo(() => layoutExtentX(slots), [slots]);
 
   // GPU resources: created once per content change, disposed on change/unmount.
   const shared = useMemo(() => {
-    const face = new THREE.ShapeGeometry(roundedRect(CARD_W, CARD_H, 0.11), 10);
+    const face = new THREE.ShapeGeometry(roundedRect(CARD_W, CARD_H, 0.14), 10);
     const pos = face.attributes.position;
     const uv = face.attributes.uv;
     for (let i = 0; i < pos.count; i++) {
       uv.setXY(i, (pos.getX(i) + CARD_W / 2) / CARD_W, (pos.getY(i) + CARD_H / 2) / CARD_H);
     }
-    const slab = new THREE.ExtrudeGeometry(roundedRect(CARD_W + 0.06, CARD_H + 0.06, 0.13), {
-      depth: 0.05,
+    const slab = new THREE.ExtrudeGeometry(roundedRect(CARD_W + 0.06, CARD_H + 0.06, 0.16), {
+      depth: 0.06,
       bevelEnabled: true,
-      bevelThickness: 0.015,
-      bevelSize: 0.015,
+      bevelThickness: 0.018,
+      bevelSize: 0.018,
       bevelSegments: 3,
       curveSegments: 10,
     });
-    slab.translate(0, 0, -0.075);
+    slab.translate(0, 0, -0.085);
     const rim = new THREE.BufferGeometry().setFromPoints(
-      roundedRect(CARD_W + 0.02, CARD_H + 0.02, 0.12)
+      roundedRect(CARD_W + 0.02, CARD_H + 0.02, 0.15)
         .getPoints(12)
         .map((p) => new THREE.Vector3(p.x, p.y, 0.012)),
     );
     const slabMaterial = new THREE.MeshPhysicalMaterial({
-      color: "#0b1428",
-      metalness: 0.35,
-      roughness: 0.32,
+      color: "#081024",
+      metalness: isDark ? 0.35 : 0.2,
+      roughness: isDark ? 0.32 : 0.4,
       clearcoat: 1,
-      clearcoatRoughness: 0.12,
+      clearcoatRoughness: isDark ? 0.12 : 0.16,
     });
     const gloss = new THREE.MeshPhysicalMaterial({
       color: "#ffffff",
       transparent: true,
-      opacity: 0.07,
+      opacity: isDark ? 0.07 : 0.035,
       roughness: 0.05,
       metalness: 0,
       clearcoat: 1,
       depthWrite: false,
     });
-    const halo = radialTexture([
-      [0, "rgba(37,99,235,0.55)"],
-      [0.5, "rgba(37,99,235,0.14)"],
-      [1, "rgba(37,99,235,0)"],
-    ]);
+    const halo = radialTexture(
+      isDark
+        ? [
+            [0, "rgba(37,99,235,0.55)"],
+            [0.5, "rgba(37,99,235,0.14)"],
+            [1, "rgba(37,99,235,0)"],
+          ]
+        : [
+            [0, "rgba(37,99,235,0.28)"],
+            [0.5, "rgba(37,99,235,0.07)"],
+            [1, "rgba(37,99,235,0)"],
+          ],
+    );
     return { face, slab, rim, slabMaterial, gloss, halo };
-  }, []);
+  }, [isDark]);
   useEffect(
     () => () => {
       shared.face.dispose();
@@ -157,13 +175,13 @@ function Gallery(props: GallerySceneProps) {
         art,
         face: new THREE.MeshBasicMaterial({ map: art.texture, toneMapped: false, transparent: true }),
         rim: new THREE.LineBasicMaterial({
-          color: "#7dd3fc",
+          color: isDark ? "#7dd3fc" : "#2563eb",
           transparent: true,
-          opacity: i === featuredIndex ? 0.45 : 0.22,
+          opacity: i === featuredIndex ? (isDark ? 0.45 : 0.35) : (isDark ? 0.22 : 0.15),
         }),
       };
     });
-  }, [cards, featuredIndex, gl]);
+  }, [cards, featuredIndex, gl, isDark]);
   useEffect(
     () => () => {
       for (const c of perCard) {
@@ -215,6 +233,12 @@ function Gallery(props: GallerySceneProps) {
     s.yaw = s.pitch = s.vyaw = s.vpitch = 0;
     s.offsets = s.offsets.map(() => ({ x: 0, y: 0 }));
   }, [props.resetToken]);
+
+  // Reset dragged offsets when the active center card changes so the new arrangement aligns perfectly
+  useEffect(() => {
+    const s = state.current;
+    s.offsets = s.offsets.map(() => ({ x: 0, y: 0 }));
+  }, [currentActive]);
 
   // The canvas element, held in a ref so handlers may style it (cursor).
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -288,6 +312,7 @@ function Gallery(props: GallerySceneProps) {
         if (e.pointerType === "mouse") {
           s.hovered = hitCard(e);
           el.style.cursor = s.hovered >= 0 ? "pointer" : "grab";
+          el.dataset.cursor = s.hovered >= 0 ? "card" : "grab";
         }
         return;
       }
@@ -296,6 +321,7 @@ function Gallery(props: GallerySceneProps) {
         g.mode = classifyGesture(Math.hypot(e.clientX - g.startX, e.clientY - g.startY), g.card >= 0, g.type);
         if (g.mode === "pending") return;
         el.style.cursor = "grabbing";
+        el.dataset.cursor = "grabbing";
       }
       const dx = e.clientX - g.lastX;
       const dy = e.clientY - g.lastY;
@@ -328,6 +354,7 @@ function Gallery(props: GallerySceneProps) {
       s.gesture = null;
       if (g.mode !== "scene") s.vyaw = s.vpitch = 0;
       el.style.cursor = s.hovered >= 0 ? "pointer" : "grab";
+      el.dataset.cursor = s.hovered >= 0 ? "card" : "grab";
       try {
         el.releasePointerCapture(e.pointerId);
       } catch {
@@ -340,11 +367,15 @@ function Gallery(props: GallerySceneProps) {
     const onUp = (e: PointerEvent) => end(e, false);
     const onCancel = (e: PointerEvent) => end(e, true);
     const onLeave = () => {
-      if (!s.gesture) s.hovered = -1;
+      if (!s.gesture) {
+        s.hovered = -1;
+        delete el.dataset.cursor;
+      }
       s.pointer.x = s.pointer.y = 0;
     };
 
     el.style.cursor = "grab";
+    el.dataset.cursor = "grab";
     el.addEventListener("pointerdown", onDown);
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerup", onUp);
@@ -381,25 +412,19 @@ function Gallery(props: GallerySceneProps) {
     p.rotation.y = damp(p.rotation.y, s.yaw, 8, dt);
     p.rotation.x = damp(p.rotation.x, s.pitch, 8, dt);
 
-    // Scroll-driven camera path, gentle pointer parallax, and a nudge toward the selection.
+    // Scroll-driven camera path and gentle pointer parallax.
+    // The active card itself centers at [0, 0], keeping camera framing stable and centered.
     const pose = cameraPose(props.progress.get(), extent, compact);
-    let tx = pose.position[0];
-    let tz = pose.position[2];
-    if (selected !== null && cardGroups.current[selected]) {
-      cardGroups.current[selected]!.getWorldPosition(world);
-      tx += (world.x - tx) * 0.3;
-      tz -= 0.6;
-    }
     const parallax = animate ? 0.35 : 0;
-    camera.position.x = damp(camera.position.x, tx + s.pointer.x * parallax, 3, dt);
+    camera.position.x = damp(camera.position.x, pose.position[0] + s.pointer.x * parallax, 3, dt);
     camera.position.y = damp(camera.position.y, pose.position[1] - s.pointer.y * parallax * 0.5, 3, dt);
-    camera.position.z = damp(camera.position.z, tz, 3, dt);
-    lookAt.current.x = damp(lookAt.current.x, pose.target[0] + (selected !== null ? (world.x - pose.target[0]) * 0.3 : 0), 3, dt);
+    camera.position.z = damp(camera.position.z, pose.position[2], 3, dt);
+    lookAt.current.x = damp(lookAt.current.x, pose.target[0], 3, dt);
     lookAt.current.y = damp(lookAt.current.y, pose.target[1], 3, dt);
     lookAt.current.z = pose.target[2];
     camera.lookAt(lookAt.current);
 
-    // Cards: home slot + dragged offset, selection emphasis, hover lift, calm float.
+    // Cards: target slot + dragged offset, smooth transition, hover lift, calm float.
     const t = frame.clock.elapsedTime;
     for (let i = 0; i < slots.length; i++) {
       const g = cardGroups.current[i];
@@ -407,28 +432,29 @@ function Gallery(props: GallerySceneProps) {
       const c = perCard[i];
       if (!g || !c || !s.shown[i]) continue;
       const isSelected = selected === i;
+      const isCenter = slot.featured; // true for currentActive
       const receded = selected !== null && !isSelected;
       const hovered = s.hovered === i && !isSelected;
 
       s.shown[i].x = damp(s.shown[i].x, s.offsets[i].x, 12, dt);
       s.shown[i].y = damp(s.shown[i].y, s.offsets[i].y, 12, dt);
       const float = animate ? Math.sin(t * 0.6 + i * 1.7) * 0.05 : 0;
-      const z = slot.z + (isSelected ? 0.8 : receded ? -0.35 : hovered ? 0.18 : 0);
+      const z = slot.z + (isSelected ? 0.2 : receded ? -0.25 : hovered ? 0.15 : 0);
 
       g.position.set(
         damp(g.position.x, slot.x + s.shown[i].x, 6, dt),
         damp(g.position.y, slot.y + s.shown[i].y + float, 6, dt),
         damp(g.position.z, z, 6, dt),
       );
-      g.rotation.y = damp(g.rotation.y, slot.rotY * (isSelected ? 0.35 : 1), 6, dt);
+      g.rotation.y = damp(g.rotation.y, slot.rotY, 6, dt);
       g.rotation.x = damp(g.rotation.x, slot.rotX, 6, dt);
-      g.scale.setScalar(damp(g.scale.x, slot.scale * (isSelected ? 1.08 : 1), 6, dt));
+      g.scale.setScalar(damp(g.scale.x, slot.scale * (isSelected ? 1.04 : 1), 6, dt));
 
-      s.dim[i] = damp(s.dim[i], receded ? 0.5 : 1, 6, dt);
+      s.dim[i] = damp(s.dim[i], receded ? 0.65 : 1, 6, dt);
       c.face.color.setScalar(s.dim[i]);
       c.rim.opacity = damp(
         c.rim.opacity,
-        isSelected ? 0.95 : hovered ? 0.7 : slot.featured ? 0.45 : 0.22,
+        isSelected ? 0.95 : hovered ? 0.7 : isCenter ? 0.45 : 0.22,
         8,
         dt,
       );
@@ -459,32 +485,42 @@ function Gallery(props: GallerySceneProps) {
 
   return (
     <group ref={pivot} position={[0, 0, PIVOT_Z]}>
-      {/* Atmosphere behind the arrangement */}
-      <mesh position={[0, 1.5, -9]} scale={[26, 14, 1]}>
-        <planeGeometry />
-        <meshBasicMaterial map={shared.halo} transparent depthWrite={false} toneMapped={false} opacity={0.55} fog={false} />
-      </mesh>
+      {/* Atmosphere behind the arrangement — dark mode only */}
+      {isDark && (
+        <mesh position={[0, 1.5, -9]} scale={[26, 14, 1]}>
+          <planeGeometry />
+          <meshBasicMaterial map={shared.halo} transparent depthWrite={false} toneMapped={false} opacity={0.55} fog={false} />
+        </mesh>
+      )}
 
-      {/* Floor: fading grid, light pool and soft contact shadows */}
-      <Grid
-        position={[0, FLOOR_Y, 0]}
-        args={[60, 60]}
-        cellSize={0.5}
-        cellThickness={0.5}
-        cellColor="#14213d"
-        sectionSize={2.5}
-        sectionThickness={1}
-        sectionColor="#1d3a78"
-        fadeDistance={24}
-        fadeStrength={1.6}
-        infiniteGrid
-      />
-      <mesh position={[0, FLOOR_Y + 0.005, 0.4]} rotation={[-Math.PI / 2, 0, 0]} scale={[16, 10, 1]}>
-        <planeGeometry />
-        <meshBasicMaterial map={shared.halo} transparent depthWrite={false} toneMapped={false} opacity={0.6} />
-      </mesh>
+      {/* Floor: subtle depth grid and grounding — dark mode only */}
+      {isDark && (
+        <Grid
+          position={[0, FLOOR_Y, 0]}
+          args={[60, 60]}
+          cellSize={0.5}
+          cellThickness={0.4}
+          cellColor="#0c172a"
+          sectionSize={2.5}
+          sectionThickness={0.8}
+          sectionColor="#13264b"
+          fadeDistance={22}
+          fadeStrength={1.8}
+          infiniteGrid
+        />
+      )}
+
+      {/* Soft contact shadows ground the floating cards */}
       {!compact && (
-        <ContactShadows position={[0, FLOOR_Y + 0.01, 0]} scale={22} far={4.5} blur={2.6} opacity={0.7} resolution={512} color="#000510" />
+        <ContactShadows
+          position={[0, FLOOR_Y + 0.01, 0]}
+          scale={26}
+          far={5.0}
+          blur={2.6}
+          opacity={isDark ? 0.7 : 0.16}
+          resolution={512}
+          color={isDark ? "#000510" : "#1e293b"}
+        />
       )}
 
       {cards.map((card, i) => (
@@ -497,7 +533,7 @@ function Gallery(props: GallerySceneProps) {
           rotation={[slots[i].rotX, slots[i].rotY, 0]}
           scale={slots[i].scale}
         >
-          {slots[i].featured && (
+          {slots[i].featured && isDark && (
             <mesh position={[0, 0, -0.2]} scale={[CARD_W * 2.2, CARD_H * 2.4, 1]}>
               <planeGeometry />
               <meshBasicMaterial map={shared.halo} transparent depthWrite={false} toneMapped={false} opacity={0.75} />
@@ -521,25 +557,42 @@ function Gallery(props: GallerySceneProps) {
 }
 
 export default function GalleryScene(props: GallerySceneProps) {
+  const isDark = (props.theme ?? "dark") === "dark";
   return (
     <Canvas
       dpr={props.compact ? [1, 1.25] : [1, 1.75]}
       camera={{ fov: props.compact ? 50 : 36, position: [0, 3.4, 15], near: 0.1, far: 80 }}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
+      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       frameloop={props.running ? "always" : "never"}
       style={{ touchAction: "pan-y" }}
     >
-      <color attach="background" args={[SCENE_BG]} />
-      <fog attach="fog" args={[SCENE_BG, 11, 30]} />
-      <ambientLight intensity={0.5} color="#a9bcff" />
-      <directionalLight position={[4, 7, 6]} intensity={1.2} />
-      <pointLight position={[-7, 2.5, -3]} intensity={40} distance={22} color="#22d3ee" />
-      <pointLight position={[7, 1, 2]} intensity={25} distance={18} color="#2563eb" />
-      <Environment resolution={128}>
-        <Lightformer form="rect" intensity={1.6} position={[0, 6, 4]} scale={[12, 2, 1]} />
-        <Lightformer form="rect" intensity={0.8} position={[-7, 1, 2]} scale={[2, 6, 1]} color="#7dd3fc" />
-        <Lightformer form="ring" intensity={1.2} position={[6, 2, -3]} scale={3} color="#2563eb" />
-      </Environment>
+      {isDark && <fog attach="fog" args={[SCENE_BG_DARK, 14, 38]} />}
+      {isDark ? (
+        <>
+          <ambientLight intensity={0.5} color="#a9bcff" />
+          <directionalLight position={[4, 7, 6]} intensity={1.2} />
+          <pointLight position={[-7, 2.5, -3]} intensity={40} distance={22} color="#22d3ee" />
+          <pointLight position={[7, 1, 2]} intensity={25} distance={18} color="#2563eb" />
+          <Environment resolution={128}>
+            <Lightformer form="rect" intensity={1.6} position={[0, 6, 4]} scale={[12, 2, 1]} />
+            <Lightformer form="rect" intensity={0.8} position={[-7, 1, 2]} scale={[2, 6, 1]} color="#7dd3fc" />
+            <Lightformer form="ring" intensity={1.2} position={[6, 2, -3]} scale={3} color="#2563eb" />
+          </Environment>
+        </>
+      ) : (
+        <>
+          <ambientLight intensity={1.5} color="#ffffff" />
+          <directionalLight position={[6, 9, 8]} intensity={2.0} color="#ffffff" />
+          <directionalLight position={[-6, 5, 4]} intensity={0.7} color="#f8fafc" />
+          <directionalLight position={[0, -4, 4]} intensity={0.3} color="#ffffff" />
+          <Environment resolution={128}>
+            <Lightformer form="rect" intensity={2.0} position={[0, 8, 5]} scale={[16, 4, 1]} color="#ffffff" />
+            <Lightformer form="rect" intensity={0.9} position={[-6, 3, 3]} scale={[3, 7, 1]} color="#ffffff" />
+            <Lightformer form="rect" intensity={0.9} position={[6, 3, 3]} scale={[3, 7, 1]} color="#ffffff" />
+            <Lightformer form="ring" intensity={0.6} position={[0, 3, -4]} scale={5} color="#ffffff" />
+          </Environment>
+        </>
+      )}
       <Gallery {...props} />
     </Canvas>
   );

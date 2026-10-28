@@ -22,6 +22,8 @@ export function ProjectCard({ project, layout, basePath, index }: ProjectCardPro
   return (
     <TiltCard className="group relative h-full rounded-[22px] [transform-style:preserve-3d]">
       <article
+        data-cursor="card"
+        data-project-card="true"
         className={cn(
           "relative flex h-full overflow-hidden rounded-[22px] border border-line bg-paper shadow-soft transition-shadow duration-500 group-hover:shadow-lift",
           feature ? "flex-col lg:grid lg:grid-cols-[1.25fr_1fr]" : "flex-col",

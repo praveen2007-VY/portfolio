@@ -3,11 +3,11 @@
  * Kept free of three.js so it can be unit-tested and reused by the DOM shell.
  */
 
-export const CARD_W = 2.4;
-export const CARD_H = 1.5;
+export const CARD_W = 3.1;
+export const CARD_H = 1.94;
 
 /** How far an individual card may be dragged from its home slot (world units). */
-export const CARD_OFFSET_LIMIT = { x: 1.6, y: 1.0 };
+export const CARD_OFFSET_LIMIT = { x: 2.0, y: 1.2 };
 /** How far the whole gallery may be rotated by dragging (radians). */
 export const YAW_LIMIT = 0.75;
 export const PITCH_LIMIT = 0.22;
@@ -35,23 +35,34 @@ export function computeLayout(count: number, featuredIndex: number, compact = fa
   const featured = Math.min(Math.max(featuredIndex, 0), count - 1);
   const spread = compact ? 0.62 : 1;
 
-  slots[featured] = { x: 0, y: 0.15, z: 0.6, rotX: -0.02, rotY: 0, scale: compact ? 1.05 : 1.22, featured: true };
+  slots[featured] = {
+    x: 0,
+    y: compact ? 0.12 : 0,
+    z: 0.65,
+    rotX: -0.02,
+    rotY: 0,
+    scale: compact ? 1.05 : 1.22,
+    featured: true,
+  };
 
-  let k = 0;
   for (let i = 0; i < count; i++) {
     if (i === featured) continue;
-    const side = k % 2 === 0 ? -1 : 1;
-    const ring = Math.floor(k / 2);
+    let delta = (i - featured) % count;
+    if (delta > count / 2) delta -= count;
+    if (delta <= -count / 2) delta += count;
+
+    const side = Math.sign(delta);
+    const ring = Math.abs(delta) - 1;
+
     slots[i] = {
-      x: side * (2.75 + ring * 2.05) * spread,
-      y: (ring % 2 === 0 ? 1 : -1) * (side === -1 ? 0.35 : -0.3),
-      z: -0.9 - ring * (compact ? 1.6 : 1.35),
-      rotX: 0.03 * side,
-      rotY: -side * (0.28 + ring * 0.07),
-      scale: Math.max(0.75, 0.95 - ring * 0.05),
+      x: side * (3.45 + ring * 2.3) * spread,
+      y: (ring % 2 === 0 ? 1 : -1) * (side === -1 ? 0.15 : -0.12),
+      z: -0.85 - ring * (compact ? 1.6 : 1.35),
+      rotX: 0.02 * side,
+      rotY: -side * (0.24 + ring * 0.06),
+      scale: Math.max(0.78, 0.95 - ring * 0.06),
       featured: false,
     };
-    k++;
   }
   return slots;
 }
@@ -98,7 +109,7 @@ export type CameraPose = { position: [number, number, number]; target: [number, 
  */
 export function cameraPose(progress: number, extentX: number, compact = false): CameraPose {
   const p = clamp(progress, 0, 1);
-  const baseZ = compact ? 12.5 : 9.6;
+  const baseZ = compact ? 12.2 : 9.2;
   const sweep = Math.min(extentX * 0.42, compact ? 1.2 : 3.2);
 
   const enter = smooth(p / 0.18);

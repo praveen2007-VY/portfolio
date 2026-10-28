@@ -45,14 +45,14 @@ export function Skills({ data }: { data: PortfolioData }) {
           {groups.map(({ category, items }, index) => {
             const Icon = iconFor(category);
             return (
-              <Reveal key={category} delay={(index % 3) * 0.06}>
-                <article className="group relative h-full overflow-hidden rounded-2xl border border-line bg-paper p-6 transition-all duration-500 ease-out hover:-translate-y-1 hover:border-accent/25 hover:shadow-lift">
+              <Reveal key={category} delay={index * 0.06}>
+                <article className="group relative h-full overflow-hidden rounded-2xl border border-line bg-paper p-6 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-accent/45 hover:shadow-lift dark:hover:border-sky-400/35">
                   <div
                     aria-hidden
-                    className="absolute -top-24 -right-24 size-48 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.14),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                    className="absolute -top-24 -right-24 size-52 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.16),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <div className="flex items-center justify-between">
-                    <span className="grid size-10 place-items-center rounded-xl bg-accent-soft text-accent transition-all duration-500 group-hover:rotate-[-6deg] group-hover:bg-accent group-hover:text-white">
+                    <span className="grid size-11 place-items-center rounded-xl bg-accent-soft text-accent transition-all duration-500 group-hover:scale-105 group-hover:rotate-[-6deg] group-hover:bg-accent group-hover:text-white dark:group-hover:bg-sky-400 dark:group-hover:text-[#070b16]">
                       <Icon className="size-5" aria-hidden />
                     </span>
                     <span className="font-mono text-[11px] text-subtle">
@@ -64,7 +64,7 @@ export function Skills({ data }: { data: PortfolioData }) {
                     {items.map((skill) => (
                       <li
                         key={skill.id}
-                        className="chip hover:-translate-y-px hover:border-accent/30 hover:bg-accent-soft hover:text-accent-strong"
+                        className="chip transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-accent-soft hover:text-accent-strong dark:hover:border-sky-400/40 dark:hover:bg-sky-400/10 dark:hover:text-sky-300"
                       >
                         {skill.name}
                       </li>

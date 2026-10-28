@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
+import { useTheme } from "@/components/portfolio/theme-provider";
 import { OrbFallback } from "@/components/three/orb-fallback";
 
 const HeroScene = dynamic(() => import("@/components/three/hero-scene"), {
@@ -63,6 +64,7 @@ export function HeroVisual({ accent, enabled, reduced }: HeroVisualProps) {
     return () => observer.disconnect();
   }, []);
 
+  const { theme } = useTheme();
   const animate = !(prefersReduced || reduced);
   const show3d = enabled && ready && (capability === "high" || capability === "low");
 
@@ -78,6 +80,7 @@ export function HeroVisual({ accent, enabled, reduced }: HeroVisualProps) {
           quality={capability === "high" ? "high" : "low"}
           animate={animate}
           active={visible}
+          theme={theme}
         />
       ) : (
         <OrbFallback animate={animate} />

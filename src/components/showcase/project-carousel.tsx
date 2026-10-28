@@ -86,7 +86,7 @@ export function ProjectCarousel({ projects, basePath, label }: { projects: Publi
             aria-roledescription="slide"
             aria-label={`${i + 1} of ${n}`}
           >
-            <article className="h-full overflow-hidden rounded-[22px] border border-white/80 bg-white/70 shadow-[0_24px_60px_-30px_rgb(16_24_40/0.35)] backdrop-blur-xl transition-transform duration-150 ease-out will-change-transform">
+            <article className="h-full overflow-hidden rounded-[22px] border border-line bg-paper/85 dark:bg-[#0e1629]/90 shadow-[0_24px_60px_-30px_rgb(16_24_40/0.35)] dark:shadow-[0_24px_60px_-30px_rgb(0_0_0/0.7)] backdrop-blur-xl transition-transform duration-150 ease-out will-change-transform">
               <PanelContent project={project} basePath={basePath} layout="stacked" priority={i === 0} />
             </article>
           </li>
@@ -111,7 +111,7 @@ export function ProjectCarousel({ projects, basePath, label }: { projects: Publi
                 <span
                   className={cn(
                     "block h-2 rounded-full transition-all duration-300",
-                    i === active ? "w-6 bg-accent" : "w-2 bg-ink/20",
+                    i === active ? "w-6 bg-accent" : "w-2 bg-ink/20 dark:bg-white/20",
                   )}
                 />
               </button>
