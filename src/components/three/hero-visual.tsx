@@ -72,7 +72,7 @@ export function HeroVisual({ accent, enabled, reduced }: HeroVisualProps) {
     <div ref={wrapper} className="relative aspect-square w-full" data-testid="hero-visual">
       <div
         aria-hidden
-        className="absolute inset-[8%] rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.14),transparent_65%)] blur-2xl"
+        className="absolute inset-[4%] rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.2)_0%,rgba(56,189,248,0.08)_40%,transparent_70%)] blur-3xl opacity-70 dark:opacity-100"
       />
       {show3d ? (
         <HeroScene

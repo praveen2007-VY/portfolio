@@ -67,8 +67,8 @@ export function LogoMark({ initials, name }: LogoMarkProps) {
       aria-label={`${name} — back to top`}
     >
       <motion.span animate={controls} className="relative grid size-9 place-items-center">
-        <span className="absolute inset-0 rounded-[10px] bg-ink shadow-[0_6px_16px_-6px_rgb(10_13_20/0.5)] transition-transform duration-300 group-hover:rotate-6" />
-        <span className="absolute inset-[3px] rounded-[7px] bg-[linear-gradient(140deg,rgb(255_255_255/0.18),transparent_55%)]" />
+        <span className="absolute inset-0 rounded-[10px] bg-[#0a0d14] shadow-[0_6px_16px_-6px_rgb(10_13_20/0.5)] transition-all duration-300 group-hover:rotate-6 dark:border dark:border-sky-400/25 dark:bg-[#111827] dark:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.5),0_0_12px_-2px_rgba(37,99,235,0.3)]" />
+        <span className="absolute inset-[3px] rounded-[7px] bg-[linear-gradient(140deg,rgb(255_255_255/0.18),transparent_55%)] dark:bg-[linear-gradient(140deg,rgba(56,189,248,0.2),transparent_55%)]" />
         <span className="relative font-mono text-[12.5px] font-semibold tracking-tight text-white">
           {initials}
         </span>

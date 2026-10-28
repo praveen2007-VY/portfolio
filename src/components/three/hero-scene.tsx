@@ -7,7 +7,6 @@ import {
   Environment,
   Float,
   Lightformer,
-  MeshTransmissionMaterial,
 } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -68,12 +67,20 @@ function Rig({
   return <group ref={group}>{children}</group>;
 }
 
-function Orbit({ radius, tilt, speed, color, animate }: {
+function Orbit({
+  radius,
+  tilt,
+  speed,
+  color,
+  animate,
+  isDark = false,
+}: {
   radius: number;
   tilt: [number, number, number];
   speed: number;
   color: string;
   animate: boolean;
+  isDark?: boolean;
 }) {
   const node = useRef<THREE.Mesh>(null);
   useFrame((state) => {
@@ -84,22 +91,35 @@ function Orbit({ radius, tilt, speed, color, animate }: {
   return (
     <group rotation={tilt}>
       <mesh>
-        <torusGeometry args={[radius, 0.006, 8, 160]} />
-        <meshBasicMaterial color={color} transparent opacity={0.35} />
+        <torusGeometry args={[radius, 0.007, 8, 160]} />
+        <meshBasicMaterial color={color} transparent opacity={isDark ? 0.45 : 0.35} />
       </mesh>
       <mesh ref={node}>
-        <sphereGeometry args={[0.055, 24, 24]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.6} roughness={0.3} />
+        <sphereGeometry args={[0.06, 24, 24]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={isDark ? 0.85 : 0.6}
+          roughness={0.25}
+        />
       </mesh>
     </group>
   );
 }
 
-function Sculpture({ accent, quality, animate, theme = "light" }: { accent: string; quality: "high" | "low"; animate: boolean; theme?: "light" | "dark" }) {
+function Sculpture({
+  accent,
+  animate,
+  theme = "light",
+}: {
+  accent: string;
+  quality: "high" | "low";
+  animate: boolean;
+  theme?: "light" | "dark";
+}) {
   const isDark = theme === "dark";
   const shellEdges = useMemo(() => new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(1.78, 1)), []);
   const core = useRef<THREE.Mesh>(null);
-  const background = useMemo(() => new THREE.Color(isDark ? "#0d1220" : "#f4f7ff"), [isDark]);
 
   useFrame((state, delta) => {
     if (!core.current || !animate) return;
@@ -109,50 +129,52 @@ function Sculpture({ accent, quality, animate, theme = "light" }: { accent: stri
 
   return (
     <>
+      {/* Outer crystalline cage: native physical glass with zero FBO artifacts and depthWrite=false
+          so back faces never render as black polygons from any viewing angle */}
       <mesh>
         <icosahedronGeometry args={[1.3, 0]} />
-        {quality === "high" ? (
-          <MeshTransmissionMaterial
-            background={background}
-            samples={6}
-            resolution={512}
-            thickness={0.55}
-            roughness={isDark ? 0.08 : 0.1}
-            transmission={1}
-            ior={1.3}
-            chromaticAberration={0.02}
-            anisotropy={0.15}
-            distortion={0.12}
-            distortionScale={0.4}
-            temporalDistortion={animate ? 0.08 : 0}
-            clearcoat={1}
-            attenuationDistance={2.4}
-            attenuationColor={isDark ? "#284488" : "#dfe8ff"}
-            color={isDark ? "#dbeafe" : "#f7f9ff"}
-          />
-        ) : (
-          <meshPhysicalMaterial
-            color={isDark ? "#203060" : "#eef3ff"}
-            roughness={0.08}
-            metalness={0.1}
-            clearcoat={1}
-            transparent
-            opacity={isDark ? 0.6 : 0.42}
-          />
-        )}
+        <meshPhysicalMaterial
+          color={isDark ? "#bae6fd" : "#f0f5ff"}
+          emissive={isDark ? "#1e3a8a" : "#000000"}
+          emissiveIntensity={isDark ? 0.18 : 0}
+          roughness={isDark ? 0.05 : 0.08}
+          metalness={0.08}
+          clearcoat={1}
+          clearcoatRoughness={0.06}
+          transmission={isDark ? 0.92 : 0.88}
+          thickness={0.5}
+          ior={1.35}
+          transparent
+          opacity={isDark ? 0.32 : 0.4}
+          depthWrite={false}
+          side={THREE.FrontSide}
+        />
       </mesh>
 
-      <mesh ref={core} scale={0.52}>
+      {/* Central energy core: vibrant electric blue with subtle cyan highlights and jewel facets */}
+      <mesh ref={core} scale={0.55}>
         <icosahedronGeometry args={[1, 1]} />
-        <meshStandardMaterial color={accent} roughness={0.25} metalness={0.35} flatShading />
+        <meshStandardMaterial
+          color={isDark ? "#2563eb" : accent}
+          emissive={isDark ? "#1d4ed8" : "#1f45e0"}
+          emissiveIntensity={isDark ? 0.7 : 0.25}
+          roughness={isDark ? 0.18 : 0.25}
+          metalness={isDark ? 0.4 : 0.35}
+          flatShading
+        />
       </mesh>
 
+      {/* Internal core illumination projecting soft light outward */}
+      <pointLight position={[0, 0, 0]} intensity={isDark ? 4.5 : 2} color={isDark ? "#38bdf8" : accent} distance={3.5} />
+
+      {/* Outer rotating technical wireframe */}
       <lineSegments geometry={shellEdges}>
-        <lineBasicMaterial color={accent} transparent opacity={isDark ? 0.35 : 0.22} />
+        <lineBasicMaterial color={isDark ? "#38bdf8" : accent} transparent opacity={isDark ? 0.42 : 0.22} />
       </lineSegments>
 
-      <Orbit radius={2.15} tilt={[1.2, 0.2, 0]} speed={0.5} color={accent} animate={animate} />
-      <Orbit radius={2.45} tilt={[0.35, -0.9, 0.4]} speed={-0.35} color={isDark ? "#38bdf8" : "#5aa2ff"} animate={animate} />
+      {/* Orbital rings and luminous satellites */}
+      <Orbit radius={2.15} tilt={[1.2, 0.2, 0]} speed={0.5} color={isDark ? "#2563eb" : accent} animate={animate} isDark={isDark} />
+      <Orbit radius={2.45} tilt={[0.35, -0.9, 0.4]} speed={-0.35} color={isDark ? "#38bdf8" : "#5aa2ff"} animate={animate} isDark={isDark} />
     </>
   );
 }
@@ -170,9 +192,15 @@ export default function HeroScene({ accent, quality, animate, active, theme = "l
       style={{ pointerEvents: "none" }}
       aria-hidden
     >
-      <ambientLight intensity={isDark ? 0.45 : 0.55} color={isDark ? "#a0b8ff" : "#ffffff"} />
-      <directionalLight position={[4, 5, 6]} intensity={isDark ? 1.6 : 1.4} />
-      <directionalLight position={[-5, -2, -4]} intensity={isDark ? 0.8 : 0.5} color={isDark ? "#38bdf8" : "#9db8ff"} />
+      <ambientLight intensity={isDark ? 0.6 : 0.55} color={isDark ? "#93c5fd" : "#ffffff"} />
+      <directionalLight position={[4, 5, 6]} intensity={isDark ? 1.8 : 1.4} />
+      <directionalLight position={[-5, -2, -4]} intensity={isDark ? 0.9 : 0.5} color={isDark ? "#38bdf8" : "#9db8ff"} />
+      {isDark && (
+        <>
+          <pointLight position={[-4, 2.5, 3]} intensity={14} color="#38bdf8" distance={12} />
+          <pointLight position={[4, -2, 2.5]} intensity={16} color="#2563eb" distance={12} />
+        </>
+      )}
 
       <Environment resolution={quality === "high" ? 256 : 64}>
         <Lightformer form="rect" intensity={2.4} position={[0, 4, 3]} scale={[8, 2, 1]} />
@@ -195,13 +223,13 @@ export default function HeroScene({ accent, quality, animate, active, theme = "l
 
       <ContactShadows
         position={[0, -2.35, 0]}
-        opacity={isDark ? 0.38 : 0.22}
+        opacity={isDark ? 0.32 : 0.22}
         scale={9}
         blur={2.8}
         far={4}
         resolution={quality === "high" ? 512 : 256}
         frames={animate ? Infinity : 1}
-        color={isDark ? "#030612" : "#1b2a55"}
+        color={isDark ? "#030718" : "#1b2a55"}
       />
     </Canvas>
   );
