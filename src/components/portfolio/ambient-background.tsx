@@ -93,21 +93,8 @@ export function AmbientBackground() {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Draw subtle ambient light gradients in the background
-      if (isDark) {
-        // Dark mode: soft cyan/blue atmospheric glows
-        const glowTop = ctx.createRadialGradient(width * 0.85, height * 0.15, 0, width * 0.85, height * 0.15, width * 0.45);
-        glowTop.addColorStop(0, "rgba(56, 189, 248, 0.04)");
-        glowTop.addColorStop(1, "rgba(56, 189, 248, 0)");
-        ctx.fillStyle = glowTop;
-        ctx.fillRect(0, 0, width, height);
-
-        const glowBottom = ctx.createRadialGradient(width * 0.15, height * 0.85, 0, width * 0.15, height * 0.85, width * 0.4);
-        glowBottom.addColorStop(0, "rgba(37, 99, 235, 0.035)");
-        glowBottom.addColorStop(1, "rgba(37, 99, 235, 0)");
-        ctx.fillStyle = glowBottom;
-        ctx.fillRect(0, 0, width, height);
-      } else {
+      // Draw subtle ambient light gradients in the background (light mode only)
+      if (!isDark) {
         // Light mode: pure white canvas with whisper-soft cobalt ambience
         const glowTop = ctx.createRadialGradient(width * 0.8, height * 0.2, 0, width * 0.8, height * 0.2, width * 0.5);
         glowTop.addColorStop(0, "rgba(36, 87, 245, 0.025)");

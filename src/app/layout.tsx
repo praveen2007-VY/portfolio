@@ -27,11 +27,11 @@ export const viewport: Viewport = {
  * Inline script that runs before React hydration to apply the saved theme
  * class to <html>. Prevents a flash of the wrong theme on page load.
  */
-const themeScript = `(function(){try{var t=localStorage.getItem('portfolio-theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem('portfolio-theme');var d=t==='light'?false:true;if(d){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`dark ${geistSans.variable} ${geistMono.variable} antialiased`}>
       {/* Anti-flash: runs synchronously before any paint */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

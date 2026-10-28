@@ -150,8 +150,12 @@ export function CertificateGallery({ certificates }: { certificates: PublicCerti
 function CertificateCard({ cert, onView }: { cert: PublicCertificate; onView: () => void }) {
   const hasFile = Boolean(cert.image_url || cert.pdf_url);
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper transition-all duration-500 hover:-translate-y-1.5 hover:border-accent/40 hover:shadow-lift dark:hover:border-sky-400/35">
-      <div className="relative aspect-[16/10] overflow-hidden border-b border-line bg-gradient-to-br from-haze to-paper">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-accent/45 hover:shadow-lift dark:hover:border-sky-400/35">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -right-24 size-52 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.16),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+      />
+      <div className="relative aspect-[16/10] overflow-hidden border-b border-line bg-paper">
         {cert.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- served through a signed-URL redirect
           <img
@@ -162,9 +166,8 @@ function CertificateCard({ cert, onView }: { cert: PublicCertificate; onView: ()
             className="size-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
           />
         ) : (
-          <div aria-hidden className="absolute inset-0 grid place-items-center">
-            <div className="hairline-grid absolute inset-0 opacity-60" />
-            <span className="relative grid size-16 place-items-center rounded-2xl border border-line bg-paper text-accent shadow-soft transition-transform duration-500 group-hover:-rotate-6">
+          <div aria-hidden className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_top,rgb(var(--accent-rgb)/0.15),transparent_70%)]">
+            <span className="relative grid size-16 place-items-center rounded-2xl border border-line bg-accent-soft text-accent shadow-soft transition-all duration-500 group-hover:scale-105 group-hover:rotate-[-6deg] group-hover:bg-accent group-hover:text-white dark:group-hover:bg-sky-400 dark:group-hover:text-[#070b16]">
               {cert.pdf_url ? <FileText className="size-7" /> : <Award className="size-7" />}
             </span>
           </div>

@@ -27,7 +27,7 @@ import type {
 type Seed<T> = Omit<T, "id" | "created_at" | "updated_at" | "sort_order">;
 
 export const seedProfile: Omit<ProfileRow, "id" | "updated_at"> = {
-  full_name: "Praveen R",
+  full_name: "Praveen",
   headline: "AI & Data Science Student | AI Developer | Full-Stack Developer | Cloud & DevOps Enthusiast",
   about: [
     "I'm a B.Tech Artificial Intelligence and Data Science student at KIT – Kalaignarkarunanidhi Institute of Technology, Coimbatore, focused on building practical software that puts AI to work.",
@@ -111,7 +111,7 @@ export const seedSections: SectionsConfig = {
 
 export const seedSettings: Omit<SiteSettingsRow, "id" | "variant" | "updated_at" | "published_at"> = {
   hero_eyebrow: "B.Tech AI & Data Science · KIT, Coimbatore",
-  hero_greeting: "Hi, I'm Praveen R.",
+  hero_greeting: "Hi, I'm Praveen.",
   hero_title: "Building Intelligent Experiences with AI, Software & Cloud.",
   hero_highlight: "AI, Software & Cloud",
   hero_intro:
@@ -122,9 +122,9 @@ export const seedSettings: Omit<SiteSettingsRow, "id" | "variant" | "updated_at"
   enable_3d: true,
   coding_summary: "Solved 530+ DSA problems across competitive programming platforms.",
   footer_text: "Designed and built with Next.js, Three.js and Supabase.",
-  seo_title: "Praveen R — AI Developer & Full-Stack Engineer",
+  seo_title: "Praveen — AI Developer & Full-Stack Engineer",
   seo_description:
-    "Portfolio of Praveen R, B.Tech AI & Data Science student at KIT Coimbatore: AI, computer vision, full-stack and AWS cloud projects.",
+    "Portfolio of Praveen, B.Tech AI & Data Science student at KIT Coimbatore: AI, computer vision, full-stack and AWS cloud projects.",
 };
 
 export const seedExperiences: Seed<ExperienceRow>[] = [

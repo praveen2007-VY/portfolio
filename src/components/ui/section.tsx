@@ -19,7 +19,7 @@ export function Section({ id, config, tone = "paper", className, children, aside
       aria-labelledby={headingId}
       className={cn(
         "relative scroll-mt-20 py-20 sm:py-24 lg:py-28",
-        tone === "mist" && "bg-mist",
+        tone === "mist" && "bg-mist dark:bg-transparent",
         className,
       )}
     >

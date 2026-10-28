@@ -17,30 +17,33 @@ export function CodingStats({ data }: { data: PortfolioData }) {
   const peak = Math.max(0, ...profiles.map((p) => p.max_rating ?? 0));
 
   return (
-    <Section id="coding" config={data.settings.sections.coding} tone="mist">
+    <Section id="coding" config={data.settings.sections.coding}>
       {profiles.length === 0 ? (
         <EmptyState title="Coding statistics coming soon" />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr_1fr]">
           <Reveal className="h-full">
-            <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-[#0a0d14] dark:bg-[#111927] dark:border dark:border-line p-7 text-white shadow-lift sm:p-8">
+            <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-line bg-paper p-7 text-ink shadow-lift transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-accent/45 dark:hover:border-sky-400/35 sm:p-8">
               <div
                 aria-hidden
-                className="absolute -top-1/3 -right-1/4 size-[80%] rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.75),transparent_60%)] blur-2xl"
+                className="pointer-events-none absolute -top-1/4 -right-1/4 size-[80%] rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.2),transparent_65%)] blur-2xl transition-opacity duration-500 group-hover:opacity-100"
               />
-              <div className="hairline-grid absolute inset-0 opacity-20 invert" aria-hidden />
-              <p className="relative font-mono text-[11px] tracking-[0.18em] text-white/60 uppercase">Overall</p>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -top-24 -right-24 size-52 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.18),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+              />
+              <p className="relative font-mono text-[11px] tracking-[0.18em] text-accent uppercase">Overall</p>
               <div className="relative mt-10">
-                <p className="text-[clamp(3rem,2rem+4vw,4.75rem)] leading-none font-semibold tracking-[-0.05em] tabular-nums">
+                <p className="text-[clamp(3rem,2rem+4vw,4.75rem)] leading-none font-semibold tracking-[-0.05em] tabular-nums text-ink">
                   {roundedDownPlus(total)}
                 </p>
-                <p className="mt-3 max-w-xs text-[15px] leading-relaxed text-white/75">
+                <p className="mt-3 max-w-xs text-[15px] leading-relaxed text-muted">
                   {data.settings.coding_summary ?? "DSA problems solved across competitive programming platforms."}
                 </p>
               </div>
               {peak > 0 && (
-                <p className="relative mt-8 border-t border-white/15 pt-4 text-[13px] text-white/70">
-                  Peak rating <span className="font-semibold text-white tabular-nums">{peak}</span>
+                <p className="relative mt-8 border-t border-line pt-4 text-[13px] text-muted">
+                  Peak rating <span className="font-semibold text-ink tabular-nums">{peak}</span>
                 </p>
               )}
             </div>
@@ -48,10 +51,14 @@ export function CodingStats({ data }: { data: PortfolioData }) {
 
           {profiles.map((p, index) => (
             <Reveal key={p.id} delay={0.06 * (index + 1)} className="h-full">
-              <article className="group flex h-full flex-col rounded-2xl border border-line bg-paper p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-lift">
+              <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-paper p-7 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-accent/45 hover:shadow-lift dark:hover:border-sky-400/35">
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-24 -right-24 size-52 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.16),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                />
                 <div className="mb-10 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="grid size-10 place-items-center rounded-xl bg-mist text-ink transition-colors group-hover:bg-accent-soft group-hover:text-accent">
+                    <span className="grid size-11 place-items-center rounded-xl bg-accent-soft text-accent transition-all duration-500 group-hover:scale-105 group-hover:rotate-[-6deg] group-hover:bg-accent group-hover:text-white dark:group-hover:bg-sky-400 dark:group-hover:text-[#070b16]">
                       <PlatformIcon platform={p.platform} />
                     </span>
                     <div>
