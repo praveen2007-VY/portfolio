@@ -40,12 +40,6 @@ export function SiteFooter({ data, links, year }: { data: PortfolioData; links: 
           </a>
         </div>
       </div>
-      <p
-        aria-hidden
-        className="pointer-events-none -mb-[0.22em] text-center text-[clamp(4rem,16vw,15rem)] leading-none font-semibold tracking-[-0.06em] text-ink/[0.035] select-none"
-      >
-        {data.profile.full_name}
-      </p>
     </footer>
   );
 }
