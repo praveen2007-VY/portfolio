@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { LoginForm } from "@/components/admin/login-form";
+import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { getAdminSession } from "@/lib/auth/admin";
 import { isSupabaseConfigured } from "@/lib/env";
 
@@ -22,14 +23,20 @@ export default async function LoginPage({ searchParams }: PageProps<"/admin/logi
   const forbidden = params.error === "forbidden";
 
   return (
-    <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-mist/60 px-4 py-12">
+    <main className="admin-shell relative grid min-h-dvh place-items-center overflow-hidden bg-[var(--admin-bg)] px-4 py-12 transition-colors duration-200">
       <div aria-hidden className="hairline-grid absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
-      <div className="relative w-full max-w-[400px]">
-        <Link href="/" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
+      
+      {/* Top Bar with Back Link & Theme Toggle */}
+      <div className="absolute top-4 inset-x-4 max-w-5xl mx-auto flex items-center justify-between z-20">
+        <Link href="/" className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-paper/80 px-3 py-1.5 text-sm font-medium text-muted hover:text-ink hover:bg-mist backdrop-blur-sm transition-colors shadow-xs">
           <ArrowLeft className="size-4" aria-hidden /> Back to portfolio
         </Link>
-        <div className="card p-7 sm:p-8">
-          <span className="grid size-11 place-items-center rounded-xl bg-ink text-white">
+        <ThemeToggle className="border border-line bg-paper/80 hover:bg-mist shadow-xs backdrop-blur-sm" />
+      </div>
+
+      <div className="relative w-full max-w-[400px]">
+        <div className="card p-7 sm:p-8 shadow-lift">
+          <span className="grid size-11 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/25">
             <ShieldCheck className="size-5" aria-hidden />
           </span>
           <h1 className="mt-5 text-2xl font-semibold tracking-tight text-ink">Administrator sign in</h1>

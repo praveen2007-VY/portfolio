@@ -90,6 +90,86 @@
 .dark [data-accent="ocean"]    { --accent-soft: #082f49; }
 .dark [data-accent="violet"]   { --accent-soft: #2e1065; }
 
+/* ─── Admin Dashboard Theme System ───────────────────────────────────────── */
+.admin-shell {
+  --admin-bg: #f8fafc;
+  --admin-sidebar-bg: #ffffff;
+  --admin-sidebar-border: #e2e8f0;
+  --admin-header-bg: rgba(255, 255, 255, 0.85);
+  --admin-card-bg: #ffffff;
+  --admin-card-border: #e2e8f0;
+  --admin-input-bg: #ffffff;
+  --admin-input-border: #cbd5e1;
+  --admin-text: #0f172a;
+  --admin-text-secondary: #334155;
+  --admin-text-muted: #64748b;
+  --admin-accent: #2563eb;
+  --admin-accent-hover: #1d4ed8;
+  --admin-accent-soft: #eff6ff;
+
+  /* Standard token mappings within the admin dashboard */
+  --color-paper: var(--admin-card-bg);
+  --color-line: var(--admin-card-border);
+  --color-line-strong: var(--admin-input-border);
+  --color-mist: #f1f5f9;
+  --color-haze: #e2e8f0;
+  --color-ink: var(--admin-text);
+  --color-ink-2: var(--admin-text-secondary);
+  --color-muted: var(--admin-text-muted);
+  --accent: var(--admin-accent);
+  --accent-strong: var(--admin-accent-hover);
+  --accent-soft: var(--admin-accent-soft);
+  --accent-rgb: 37 99 235;
+
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.dark .admin-shell,
+html.dark .admin-shell {
+  --admin-bg: #0b1120;
+  --admin-sidebar-bg: #080d19;
+  --admin-sidebar-border: #1e293b;
+  --admin-header-bg: rgba(11, 17, 32, 0.85);
+  --admin-card-bg: #111827;
+  --admin-card-border: #1e293b;
+  --admin-input-bg: #0d1527;
+  --admin-input-border: #273449;
+  --admin-text: #f8fafc;
+  --admin-text-secondary: #94a3b8;
+  --admin-text-muted: #64748b;
+  --admin-accent: #2563eb;
+  --admin-accent-hover: #3b82f6;
+  --admin-accent-soft: rgba(37, 99, 235, 0.16);
+
+  /* Standard token mappings within the admin dashboard */
+  --color-paper: var(--admin-card-bg);
+  --color-line: var(--admin-card-border);
+  --color-line-strong: var(--admin-input-border);
+  --color-mist: #0e1726;
+  --color-haze: #172238;
+  --color-ink: var(--admin-text);
+  --color-ink-2: var(--admin-text-secondary);
+  --color-muted: var(--admin-text-muted);
+  --accent: var(--admin-accent);
+  --accent-strong: var(--admin-accent-hover);
+  --accent-soft: var(--admin-accent-soft);
+  --accent-rgb: 37 99 235;
+
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.dark .admin-shell .field-input {
+  background-color: var(--admin-input-bg);
+  border-color: var(--admin-input-border);
+  color: var(--admin-text);
+}
+
+.dark .admin-shell .field-input:focus {
+  border-color: var(--admin-accent);
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;

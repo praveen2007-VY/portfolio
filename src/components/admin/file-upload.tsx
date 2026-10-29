@@ -290,14 +290,29 @@ export function GalleryField({ id, kind, value, max, onChange }: GalleryFieldPro
             <img src={previews[path] ?? mediaUrl(path) ?? ""} alt={`Screenshot ${index + 1}`} className="size-full object-cover" />
             <div className="absolute inset-x-1 bottom-1 flex justify-between gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
               <span className="flex gap-1">
-                <button type="button" className="rounded bg-white/90 px-1.5 text-xs" onClick={() => move(index, -1)} aria-label={`Move screenshot ${index + 1} earlier`}>
+                <button
+                  type="button"
+                  className="rounded border border-line bg-paper/95 px-1.5 text-xs text-ink shadow-sm hover:bg-mist transition-colors"
+                  onClick={() => move(index, -1)}
+                  aria-label={`Move screenshot ${index + 1} earlier`}
+                >
                   ←
                 </button>
-                <button type="button" className="rounded bg-white/90 px-1.5 text-xs" onClick={() => move(index, 1)} aria-label={`Move screenshot ${index + 1} later`}>
+                <button
+                  type="button"
+                  className="rounded border border-line bg-paper/95 px-1.5 text-xs text-ink shadow-sm hover:bg-mist transition-colors"
+                  onClick={() => move(index, 1)}
+                  aria-label={`Move screenshot ${index + 1} later`}
+                >
                   →
                 </button>
               </span>
-              <button type="button" className="rounded bg-white/90 p-1 text-danger" onClick={() => remove(path)} aria-label={`Remove screenshot ${index + 1}`}>
+              <button
+                type="button"
+                className="rounded border border-line bg-paper/95 p-1 text-danger shadow-sm hover:bg-danger/10 transition-colors"
+                onClick={() => remove(path)}
+                aria-label={`Remove screenshot ${index + 1}`}
+              >
                 <Trash2 className="size-3.5" aria-hidden />
               </button>
             </div>

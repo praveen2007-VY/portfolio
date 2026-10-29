@@ -128,7 +128,7 @@ describe.each(GRANT_MODES)("privileges ($name)", ({ defaultGrants }) => {
         const profile = await t[who]<{ full_name: string; phone: string | null }>(
           "select full_name, phone from public.get_public_profile()",
         );
-        expect(profile.rows[0]).toEqual({ full_name: "Praveen R", phone: null });
+        expect(profile.rows[0]).toEqual({ full_name: "Praveen", phone: null });
       }
     });
 

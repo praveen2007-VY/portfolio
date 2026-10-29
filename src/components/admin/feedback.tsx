@@ -93,7 +93,7 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
           setConfirmState(null);
         }}
         aria-labelledby="confirm-title"
-        className="m-auto w-[min(92vw,420px)] rounded-2xl border border-line bg-paper p-6 shadow-lift backdrop:bg-ink/40 backdrop:backdrop-blur-[2px]"
+        className="m-auto w-[min(92vw,420px)] rounded-2xl border border-line bg-paper text-ink p-6 shadow-lift backdrop:bg-black/60 backdrop:backdrop-blur-xs"
       >
         {confirmState && (
           <>

@@ -134,7 +134,7 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
   }
 
   return (
-    <form noValidate onSubmit={onSave} className="space-y-6">
+    <form noValidate onSubmit={onSave} className="space-y-6 pb-28">
       <div
         className={cn(
           "flex flex-wrap items-center gap-3 rounded-2xl border p-4 text-sm",
@@ -157,7 +157,7 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
         )}
       </div>
 
-      <fieldset className="card p-6 sm:p-7">
+      <fieldset className="card scroll-mt-24 scroll-mb-28 p-6 sm:p-7">
         <legend className="sr-only">Hero</legend>
         <h2 className="text-base font-semibold text-ink">Hero</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -167,7 +167,7 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
         </div>
       </fieldset>
 
-      <fieldset className="card p-6 sm:p-7">
+      <fieldset className="card scroll-mt-24 scroll-mb-28 p-6 sm:p-7">
         <legend className="sr-only">Sections</legend>
         <h2 className="text-base font-semibold text-ink">Sections</h2>
         <p className="mt-1 text-sm text-muted">Headings, descriptions and visibility of each section.</p>
@@ -222,7 +222,7 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
         </div>
       </fieldset>
 
-      <fieldset className="card p-6 sm:p-7">
+      <fieldset className="card scroll-mt-24 scroll-mb-28 p-6 sm:p-7">
         <legend className="sr-only">Appearance</legend>
         <h2 className="text-base font-semibold text-ink">Appearance & motion</h2>
         <p className="mt-2 text-[13px] font-medium text-ink-2" id="accent-label">
@@ -244,7 +244,9 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
                     onClick={() => field.onChange(accent)}
                     className={cn(
                       "flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] font-medium transition-colors",
-                      selected ? "border-ink bg-paper text-ink" : "border-line text-ink-2 hover:border-line-strong",
+                      selected
+                        ? "border-accent bg-accent-soft text-accent-strong ring-2 ring-accent/20"
+                        : "border-line text-ink-2 hover:border-line-strong hover:bg-mist/50",
                     )}
                   >
                     <span className="grid size-5 place-items-center rounded-full" style={{ background: ACCENT_HEX[accent] }}>
@@ -277,7 +279,9 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
                   onClick={() => field.onChange(option.value)}
                   className={cn(
                     "rounded-xl border p-3 text-left transition-colors",
-                    field.value === option.value ? "border-ink bg-paper" : "border-line hover:border-line-strong",
+                    field.value === option.value
+                      ? "border-accent bg-accent-soft text-ink ring-2 ring-accent/20"
+                      : "border-line hover:border-line-strong hover:bg-mist/50",
                   )}
                 >
                   <span className="block text-sm font-medium text-ink">{option.label}</span>
@@ -302,7 +306,7 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
         </div>
       </fieldset>
 
-      <fieldset className="card p-6 sm:p-7">
+      <fieldset className="card scroll-mt-24 scroll-mb-28 p-6 sm:p-7">
         <legend className="sr-only">Content and SEO</legend>
         <h2 className="text-base font-semibold text-ink">Footer, statistics & SEO</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -312,16 +316,55 @@ export function SettingsForm({ draft, hasUnpublishedChanges, publishedAt }: Sett
         </div>
       </fieldset>
 
-      <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-line bg-paper/90 p-3 shadow-lift backdrop-blur">
-        <Button type="submit" variant="secondary" loading={busy === "save"} disabled={busy !== null}>
-          Save draft
-        </Button>
-        <Button type="button" variant="secondary" onClick={onPreview} loading={busy === "preview"} disabled={busy !== null}>
-          <ScanEye className="size-4" aria-hidden /> Preview
-        </Button>
-        <Button type="button" onClick={onPublish} loading={busy === "publish"} disabled={busy !== null}>
-          <Send className="size-4" aria-hidden /> Publish
-        </Button>
+      {/* Sticky Bottom Bar — theme aware, clearance and states */}
+      <div className="sticky bottom-4 z-20 mt-8 rounded-2xl border border-line bg-paper/95 p-3.5 shadow-lift backdrop-blur-md transition-all">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5 pl-1.5">
+            {busy === "save" ? (
+              <>
+                <span className="relative flex size-2.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex size-2.5 rounded-full bg-blue-600" />
+                </span>
+                <p className="text-[13px] font-medium text-blue-600 dark:text-blue-400">Saving draft…</p>
+              </>
+            ) : busy === "publish" ? (
+              <>
+                <span className="relative flex size-2.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex size-2.5 rounded-full bg-blue-600" />
+                </span>
+                <p className="text-[13px] font-medium text-blue-600 dark:text-blue-400">Publishing settings…</p>
+              </>
+            ) : isDirty ? (
+              <>
+                <span className="size-2.5 rounded-full bg-amber-500 shrink-0" />
+                <p className="text-[13px] font-medium text-amber-600 dark:text-amber-400">You have unsaved edits</p>
+              </>
+            ) : hasUnpublishedChanges ? (
+              <>
+                <span className="size-2.5 rounded-full bg-amber-500 shrink-0" />
+                <p className="text-[13px] text-muted">Draft has unpublished changes</p>
+              </>
+            ) : (
+              <>
+                <span className="size-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <p className="text-[13px] text-muted">Live site matches draft</p>
+              </>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="submit" variant="secondary" loading={busy === "save"} disabled={busy !== null}>
+              Save draft
+            </Button>
+            <Button type="button" variant="secondary" onClick={onPreview} loading={busy === "preview"} disabled={busy !== null}>
+              <ScanEye className="size-4" aria-hidden /> Preview
+            </Button>
+            <Button type="button" onClick={onPublish} loading={busy === "publish"} disabled={busy !== null}>
+              <Send className="size-4" aria-hidden /> Publish
+            </Button>
+          </div>
+        </div>
       </div>
     </form>
   );

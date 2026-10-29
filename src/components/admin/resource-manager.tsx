@@ -268,7 +268,7 @@ function ResourceManagerInner({ resource, rows, openNew = false, compact = false
           event.preventDefault();
           void requestClose();
         }}
-        className="mt-0 mr-0 mb-0 ml-auto h-dvh max-h-dvh w-[min(100vw,720px)] max-w-none border-l border-line bg-paper p-0 shadow-lift backdrop:bg-ink/35 backdrop:backdrop-blur-[2px]"
+        className="mt-0 mr-0 mb-0 ml-auto h-dvh max-h-dvh w-[min(100vw,720px)] max-w-none border-l border-line bg-paper text-ink p-0 shadow-lift backdrop:bg-black/60 backdrop:backdrop-blur-xs"
       >
         {editing && (
           <div className="flex h-full flex-col">

@@ -84,14 +84,14 @@ function useSaveForm(
 
 export function ProfileEditor({ profile, limits }: { profile: ProfileRow; limits: UploadLimits }) {
   return (
-    <>
+    <div className="space-y-8 pb-28">
       <UploadSessionProvider limits={limits}>
         <ProfileForm profile={profile} />
       </UploadSessionProvider>
       <UploadSessionProvider limits={limits}>
         <ResumeCard profile={profile} />
       </UploadSessionProvider>
-    </>
+    </div>
   );
 }
 
@@ -112,7 +112,7 @@ function ProfileForm({ profile }: { profile: ProfileRow }) {
       className="space-y-6"
     >
       {PROFILE_SECTIONS.map((section) => (
-        <fieldset key={section.title} className="card p-6 sm:p-7">
+        <fieldset key={section.title} className="card scroll-mt-24 scroll-mb-28 p-6 sm:p-7">
           <legend className="sr-only">{section.title}</legend>
           <h2 className="text-base font-semibold text-ink">{section.title}</h2>
           {section.description && <p className="mt-1 text-sm text-muted">{section.description}</p>}
@@ -123,11 +123,46 @@ function ProfileForm({ profile }: { profile: ProfileRow }) {
           </div>
         </fieldset>
       ))}
-      <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-2xl border border-line bg-paper/90 p-3 shadow-lift backdrop-blur">
-        <p className="mr-auto pl-2 text-[13px] text-muted">{isDirty ? "You have unsaved changes." : "All changes saved."}</p>
-        <Button type="submit" loading={isSubmitting}>
-          Save profile
-        </Button>
+
+      {/* Sticky Bottom Save Bar — reserved clearance & theme-aware */}
+      <div className="sticky bottom-4 z-20 mt-8 rounded-2xl border border-line bg-paper/95 p-3.5 shadow-lift backdrop-blur-md transition-all">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5 pl-1.5">
+            {isSubmitting ? (
+              <>
+                <span className="relative flex size-2.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex size-2.5 rounded-full bg-blue-600" />
+                </span>
+                <p className="text-[13px] font-medium text-blue-600 dark:text-blue-400">
+                  Saving profile changes…
+                </p>
+              </>
+            ) : isDirty ? (
+              <>
+                <span className="size-2.5 rounded-full bg-amber-500 shrink-0" />
+                <p className="text-[13px] font-medium text-amber-600 dark:text-amber-400">
+                  You have unsaved changes
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="size-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <p className="text-[13px] text-muted">
+                  All changes saved
+                </p>
+              </>
+            )}
+          </div>
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+            className="w-full sm:w-auto min-w-[130px] font-medium"
+          >
+            {isSubmitting ? "Saving…" : "Save profile"}
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -227,10 +262,10 @@ export function SocialLinksForm({ profile }: { profile: ProfileRow }) {
   const {
     control,
     register,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = form;
   return (
-    <form noValidate onSubmit={submit} className="card p-6 sm:p-7">
+    <form noValidate onSubmit={submit} className="card scroll-mt-24 p-6 sm:p-7">
       <h2 className="text-base font-semibold text-ink">Social links</h2>
       <p className="mt-1 text-sm text-muted">
         Shown in the hero, contact section and footer. Changes go live when saved.
@@ -240,9 +275,12 @@ export function SocialLinksForm({ profile }: { profile: ProfileRow }) {
           <Field key={field.name} field={field} control={control} register={register} errors={errors} />
         ))}
       </div>
-      <div className="mt-5 flex justify-end">
-        <Button type="submit" variant="secondary" loading={isSubmitting}>
-          Save links
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        <p className="text-[13px] text-muted">
+          {isSubmitting ? "Saving links…" : isDirty ? "You have unsaved link edits." : "Links up to date."}
+        </p>
+        <Button type="submit" variant="secondary" loading={isSubmitting} disabled={isSubmitting}>
+          {isSubmitting ? "Saving…" : "Save links"}
         </Button>
       </div>
     </form>
