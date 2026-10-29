@@ -77,6 +77,16 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
   useEffect(() => {
     const el = track.current;
     if (!el) return;
+
+    // Check immediate visibility on mount (crucial when navigating back to #projects)
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 2 && rect.bottom > -window.innerHeight) {
+      setNear(true);
+    }
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setVisible(true);
+    }
+
     const nearObserver = new IntersectionObserver(([e]) => e.isIntersecting && setNear(true), { rootMargin: "100% 0px" });
     const visibleObserver = new IntersectionObserver(([e]) => setVisible(e.isIntersecting));
     nearObserver.observe(el);

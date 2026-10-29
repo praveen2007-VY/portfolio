@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { ProjectDetail } from "@/components/projects/project-detail";
 import { getPublishedPortfolio } from "@/lib/data/portfolio";
 
+export const instant = false;
+
 // Published projects are prerendered and refreshed through the 'portfolio'
 // cache tag; newly published slugs render on demand. Unknown slugs show the
 // not-found page with a noindex tag (the first on-demand render streams with

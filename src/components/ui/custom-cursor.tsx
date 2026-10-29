@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "@/components/portfolio/theme-provider";
 
 type Spark = {
@@ -17,7 +18,6 @@ type Spark = {
 type TrailNode = {
   x: number;
   y: number;
-  curlPhase: number;
 };
 
 function subscribePointerFine(callback: () => void) {
@@ -35,36 +35,43 @@ function getServerPointerFineSnapshot(): boolean {
   return false;
 }
 
-function isTextInput(target: HTMLElement | null): boolean {
+/**
+ * Returns true if the element is an editable text field (used for precision cursor mode).
+ * Never checks window.getSelection() so text selection or multiple clicks NEVER hide the cursor.
+ */
+export function isTextInput(target: HTMLElement | null): boolean {
   if (!target) return false;
-  if (
-    target.closest(
-      'input, textarea, select, [contenteditable="true"], [data-cursor="text"]'
+  return Boolean(
+    target.closest?.(
+      'input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), textarea, [contenteditable="true"], [data-cursor="text"]'
     )
-  ) {
-    return true;
-  }
-  const selection = typeof window !== "undefined" ? window.getSelection() : null;
-  return Boolean(selection && selection.toString().trim().length > 0);
+  );
 }
 
-function isInteractive(target: HTMLElement | null): boolean {
+/**
+ * Detects if the hovered element is interactive (button, link, tab, card, chip, tags, etc.)
+ */
+export function isInteractive(target: HTMLElement | null): boolean {
   if (!target) return false;
 
-  // 3D Canvas dataset cursor
-  if (target instanceof HTMLCanvasElement && target.dataset.cursor === "card") {
+  if (
+    (target.tagName === "CANVAS" ||
+      (typeof HTMLCanvasElement !== "undefined" && target instanceof HTMLCanvasElement)) &&
+    (target.dataset?.cursor === "card" || target.dataset?.cursor === "grab")
+  ) {
     return true;
   }
 
   return Boolean(
-    target.closest(
-      'a, button, [role="button"], [role="link"], [data-cursor="chip"], [data-cursor="card"], [data-project-card], article, summary, [role="group"][aria-label="Projects"] button'
+    target.closest?.(
+      'a, button, [role="button"], [role="link"], [data-cursor="chip"], [data-cursor="card"], [data-project-card], article, summary, [role="group"][aria-label="Projects"] button, label, select, input[type="checkbox"], input[type="radio"], [tabindex]:not([tabindex="-1"])'
     )
   );
 }
 
 export function CustomCursor() {
   const { theme } = useTheme();
+  const pathname = usePathname();
   const hasFinePointer = useSyncExternalStore(
     subscribePointerFine,
     getPointerFineSnapshot,
@@ -73,14 +80,48 @@ export function CustomCursor() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDark = theme === "dark";
+  const isDarkRef = useRef(isDark);
+  useEffect(() => {
+    isDarkRef.current = isDark;
+  }, [isDark]);
 
-  // Coordinates and state refs for zero-re-render rAF loop
-  const mouseRef = useRef({ x: -100, y: -100, visible: false, isText: false, isHovered: false });
+  // Zero-re-render mutable state refs for 60/120fps rAF loop
+  const mouseRef = useRef({
+    x: -100,
+    y: -100,
+    visible: false,
+    isText: false,
+    isHovered: false,
+    isDown: false,
+  });
   const trailRef = useRef<TrailNode[]>([]);
   const sparksRef = useRef<Spark[]>([]);
   const opacityRef = useRef(0);
   const hoverFactorRef = useRef(0);
+  const textFactorRef = useRef(0);
+  const clickFactorRef = useRef(0);
   const reducedMotionRef = useRef(false);
+
+  // Helper to promote the canvas to the browser's top layer (above modals/dialogs/backdrops)
+  const promoteToTopLayer = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof canvas.showPopover !== "function") return;
+    try {
+      if (canvas.matches(":popover-open")) {
+        canvas.hidePopover();
+      }
+      canvas.showPopover();
+    } catch {
+      // Graceful fallback for non-popover environments
+    }
+  };
+
+  // Re-promote whenever route changes or fine pointer status updates
+  useEffect(() => {
+    if (!hasFinePointer) return;
+    document.documentElement.classList.add("has-custom-cursor");
+    promoteToTopLayer();
+  }, [pathname, hasFinePointer]);
 
   useEffect(() => {
     if (!hasFinePointer) return;
@@ -89,6 +130,12 @@ export function CustomCursor() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
+
+    // Enable popover top-layer positioning if supported by the browser
+    if (typeof canvas.showPopover === "function") {
+      canvas.setAttribute("popover", "manual");
+      promoteToTopLayer();
+    }
 
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     reducedMotionRef.current = motionQuery.matches;
@@ -99,12 +146,11 @@ export function CustomCursor() {
 
     document.documentElement.classList.add("has-custom-cursor");
 
-    // 5 lightweight fading trail particles for a natural, curved comet-like tail
+    // 5 trailing nodes for smooth, curved comet tail
     const trailCount = 5;
-    trailRef.current = Array.from({ length: trailCount }, (_, i) => ({
-      x: -100,
-      y: -100,
-      curlPhase: i * 0.8,
+    trailRef.current = Array.from({ length: trailCount }, () => ({
+      x: mouseRef.current.x > 0 ? mouseRef.current.x : -100,
+      y: mouseRef.current.y > 0 ? mouseRef.current.y : -100,
     }));
 
     let width = 0;
@@ -129,6 +175,21 @@ export function CustomCursor() {
     resize();
     window.addEventListener("resize", resize, { passive: true });
 
+    // MutationObserver to watch for <dialog> open/close or top-layer modals
+    const dialogObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === "attributes" && m.attributeName === "open") {
+          promoteToTopLayer();
+          break;
+        }
+      }
+    });
+    dialogObserver.observe(document.documentElement, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ["open"],
+    });
+
     const onPointerMove = (e: PointerEvent) => {
       if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
 
@@ -144,7 +205,6 @@ export function CustomCursor() {
 
       if (!m.visible) {
         m.visible = true;
-        // Snap trail nodes to entry position to avoid initial jump
         for (const node of trailRef.current) {
           node.x = e.clientX;
           node.y = e.clientY;
@@ -152,96 +212,151 @@ export function CustomCursor() {
       }
     };
 
-    const onPointerDown = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
-      if (mouseRef.current.isText) return;
+    const spawnSparkles = (x: number, y: number) => {
+      if (reducedMotionRef.current) return;
+      const sparkCount = 7;
+      const isD = isDarkRef.current;
+      const coreColor = isD ? "#60A5FA" : "#2563EB";
+      const highlightColor = isD ? "#22D3EE" : "#38BDF8";
 
-      // Brief, tiny particle sparkle on click (NO expanding circles or rings)
-      if (!reducedMotionRef.current) {
-        const sparkCount = 7;
-        const coreColor = isDark ? "#60A5FA" : "#2563EB";
-        const highlightColor = isDark ? "#22D3EE" : "#60A5FA";
-
-        for (let i = 0; i < sparkCount; i++) {
-          const angle = (Math.PI * 2 * i) / sparkCount + (Math.random() - 0.5) * 0.6;
-          const speed = 2.0 + Math.random() * 2.2;
-          sparksRef.current.push({
-            x: e.clientX,
-            y: e.clientY,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            life: 1,
-            maxLife: 15 + Math.floor(Math.random() * 5),
-            size: 1.4 + Math.random() * 1.2,
-            color: i % 2 === 0 ? coreColor : highlightColor,
-          });
-        }
+      for (let i = 0; i < sparkCount; i++) {
+        const angle = (Math.PI * 2 * i) / sparkCount + (Math.random() - 0.5) * 0.6;
+        const speed = 1.8 + Math.random() * 2.2;
+        sparksRef.current.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          maxLife: 14 + Math.floor(Math.random() * 5),
+          size: 1.4 + Math.random() * 1.2,
+          color: i % 2 === 0 ? coreColor : highlightColor,
+        });
       }
     };
 
-    const onMouseLeave = () => {
-      mouseRef.current.visible = false;
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+
+      const m = mouseRef.current;
+      m.x = e.clientX;
+      m.y = e.clientY;
+      m.visible = true;
+      m.isDown = true;
+
+      spawnSparkles(e.clientX, e.clientY);
+
+      // If a modal dialog was opened during click, ensure top layer
+      if (document.querySelector("dialog[open]")) {
+        promoteToTopLayer();
+      }
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+      const m = mouseRef.current;
+      m.x = e.clientX;
+      m.y = e.clientY;
+      m.visible = true;
+      m.isDown = false;
+    };
+
+    const onPointerCancel = () => {
+      mouseRef.current.isDown = false;
+    };
+
+    const onMouseLeave = (e: MouseEvent) => {
+      // Only set invisible if the cursor genuinely left the viewport boundary
+      if (
+        e.clientY <= 0 ||
+        e.clientX <= 0 ||
+        e.clientX >= window.innerWidth ||
+        e.clientY >= window.innerHeight ||
+        (!e.relatedTarget && !(e as unknown as { toElement?: unknown }).toElement)
+      ) {
+        mouseRef.current.visible = false;
+      }
     };
 
     const onMouseEnter = (e: MouseEvent) => {
-      mouseRef.current.visible = true;
-      mouseRef.current.x = e.clientX;
-      mouseRef.current.y = e.clientY;
+      const m = mouseRef.current;
+      m.visible = true;
+      m.x = e.clientX;
+      m.y = e.clientY;
       for (const node of trailRef.current) {
         node.x = e.clientX;
         node.y = e.clientY;
       }
     };
 
-    const onWindowBlur = () => {
-      mouseRef.current.visible = false;
+    const onWindowFocus = () => {
+      mouseRef.current.visible = true;
+      promoteToTopLayer();
+    };
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        mouseRef.current.visible = true;
+        promoteToTopLayer();
+      }
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("pointerdown", onPointerDown, { passive: true });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerCancel, { passive: true });
     document.documentElement.addEventListener("mouseleave", onMouseLeave, { passive: true });
     document.documentElement.addEventListener("mouseenter", onMouseEnter, { passive: true });
-    window.addEventListener("blur", onWindowBlur);
+    window.addEventListener("focus", onWindowFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     let frame = 0;
 
-    // Frame animation loop
     const render = () => {
       ctx.clearRect(0, 0, width, height);
       frame++;
 
+      const isD = isDarkRef.current;
       const m = mouseRef.current;
-      const targetOpacity = m.visible && !m.isText ? 1 : 0;
+
+      // Always visible while in window, never hidden over inputs
+      const targetOpacity = m.visible ? 1 : 0;
       opacityRef.current += (targetOpacity - opacityRef.current) * 0.22;
 
       const targetHover = m.isHovered ? 1 : 0;
-      hoverFactorRef.current += (targetHover - hoverFactorRef.current) * 0.16;
+      hoverFactorRef.current += (targetHover - hoverFactorRef.current) * 0.18;
+
+      const targetText = m.isText ? 1 : 0;
+      textFactorRef.current += (targetText - textFactorRef.current) * 0.2;
+
+      const targetClick = m.isDown ? 1 : 0;
+      clickFactorRef.current += (targetClick - clickFactorRef.current) * 0.25;
 
       const opacity = opacityRef.current;
       const hover = hoverFactorRef.current;
+      const text = textFactorRef.current;
+      const click = clickFactorRef.current;
 
       if (opacity > 0.005) {
         const headX = m.x;
         const headY = m.y;
         const trail = trailRef.current;
 
-        // The central point follows immediately.
-        // The trailing particles follow smoothly with natural easing and subtle curve.
+        // Smooth trailing comet spine (disabled under prefers-reduced-motion)
         if (!reducedMotionRef.current && trail.length > 0) {
           let prevX = headX;
           let prevY = headY;
 
           for (let i = 0; i < trail.length; i++) {
             const node = trail[i];
-            const ease = 0.38 - i * 0.04; // natural easing along trail
+            const ease = 0.38 - i * 0.04;
             node.x += (prevX - node.x) * ease;
             node.y += (prevY - node.y) * ease;
-
             prevX = node.x;
             prevY = node.y;
           }
 
-          // Draw the smooth connected comet tail spine
+          // Spine line
           ctx.beginPath();
           ctx.moveTo(headX, headY);
           for (let i = 0; i < trail.length - 1; i++) {
@@ -260,109 +375,123 @@ export function CustomCursor() {
             trail[trail.length - 1].y,
           );
 
-          if (isDark) {
+          if (isD) {
             tailGradient.addColorStop(0, `rgba(96, 165, 250, ${(0.65 * opacity).toFixed(3)})`);
             tailGradient.addColorStop(0.5, `rgba(34, 211, 238, ${(0.35 * opacity).toFixed(3)})`);
             tailGradient.addColorStop(1, "rgba(34, 211, 238, 0)");
           } else {
             tailGradient.addColorStop(0, `rgba(37, 99, 235, ${(0.55 * opacity).toFixed(3)})`);
-            tailGradient.addColorStop(0.5, `rgba(96, 165, 250, ${(0.28 * opacity).toFixed(3)})`);
-            tailGradient.addColorStop(1, "rgba(96, 165, 250, 0)");
+            tailGradient.addColorStop(0.5, `rgba(56, 189, 248, ${(0.28 * opacity).toFixed(3)})`);
+            tailGradient.addColorStop(1, "rgba(56, 189, 248, 0)");
           }
 
           ctx.strokeStyle = tailGradient;
-          ctx.lineWidth = 3.6 + hover * 1.2;
+          ctx.lineWidth = 3.6 + hover * 1.2 - text * 1.0;
           ctx.lineCap = "round";
           ctx.stroke();
 
-          // Draw the 4-6 lightweight fading trail particles with varied opacity and size
+          // Fading trail particles along comet tail
           const particleSizes = [3.8, 3.0, 2.3, 1.6, 1.0];
           const particleAlphas = [0.55, 0.42, 0.30, 0.18, 0.08];
 
           for (let i = 0; i < trail.length; i++) {
             const node = trail[i];
-            const size = (particleSizes[i] ?? 1.0) * (1 + hover * 0.25);
+            const size = (particleSizes[i] ?? 1.0) * (1 + hover * 0.25 - text * 0.2);
             const alpha = (particleAlphas[i] ?? 0.1) * opacity * (1 + hover * 0.3);
 
             ctx.beginPath();
-            ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+            ctx.arc(node.x, node.y, Math.max(0.6, size), 0, Math.PI * 2);
 
-            if (isDark) {
+            if (isD) {
               ctx.fillStyle = i % 2 === 0
                 ? `rgba(96, 165, 250, ${alpha.toFixed(3)})`
                 : `rgba(34, 211, 238, ${alpha.toFixed(3)})`;
             } else {
               ctx.fillStyle = i % 2 === 0
-                ? `rgba(37, 99, 235, ${alpha.toFixed(3)})`
-                : `rgba(96, 165, 250, ${alpha.toFixed(3)})`;
+                ? `rgba(29, 78, 216, ${alpha.toFixed(3)})`
+                : `rgba(56, 189, 248, ${alpha.toFixed(3)})`;
             }
             ctx.fill();
           }
         }
 
-        // ─── WIDE, SOFT RADIAL GLOW (40–55px across, ~20–27px radius) ────────
-        // Blends naturally into the white background with no harsh borders or rings.
-        const glowRadius = isDark ? 23 + hover * 5 : 21 + hover * 5; // 42px to 56px across
-        const glowAlpha = isDark ? (0.42 + hover * 0.2) * opacity : (0.24 + hover * 0.14) * opacity;
+        // ─── SOFT CYAN-BLUE RADIAL OUTER GLOW (no hard rings or circles) ─────
+        const glowRadius = isD
+          ? 24 + hover * 6 - text * 6
+          : 22 + hover * 5 - text * 5;
+        const glowAlpha = isD
+          ? (0.42 + hover * 0.2) * opacity
+          : (0.28 + hover * 0.16) * opacity;
 
-        const radialGlow = ctx.createRadialGradient(headX, headY, 0, headX, headY, glowRadius);
-        if (isDark) {
+        const radialGlow = ctx.createRadialGradient(headX, headY, 0, headX, headY, Math.max(1, glowRadius));
+        if (isD) {
           radialGlow.addColorStop(0, `rgba(96, 165, 250, ${glowAlpha.toFixed(3)})`);
           radialGlow.addColorStop(0.35, `rgba(34, 211, 238, ${(glowAlpha * 0.6).toFixed(3)})`);
           radialGlow.addColorStop(0.7, `rgba(34, 211, 238, ${(glowAlpha * 0.18).toFixed(3)})`);
           radialGlow.addColorStop(1, "rgba(34, 211, 238, 0)");
         } else {
           radialGlow.addColorStop(0, `rgba(37, 99, 235, ${glowAlpha.toFixed(3)})`);
-          radialGlow.addColorStop(0.35, `rgba(96, 165, 250, ${(glowAlpha * 0.55).toFixed(3)})`);
-          radialGlow.addColorStop(0.7, `rgba(96, 165, 250, ${(glowAlpha * 0.16).toFixed(3)})`);
-          radialGlow.addColorStop(1, "rgba(96, 165, 250, 0)");
+          radialGlow.addColorStop(0.35, `rgba(56, 189, 248, ${(glowAlpha * 0.55).toFixed(3)})`);
+          radialGlow.addColorStop(0.7, `rgba(56, 189, 248, ${(glowAlpha * 0.16).toFixed(3)})`);
+          radialGlow.addColorStop(1, "rgba(56, 189, 248, 0)");
         }
 
         ctx.beginPath();
-        ctx.arc(headX, headY, glowRadius, 0, Math.PI * 2);
+        ctx.arc(headX, headY, Math.max(1, glowRadius), 0, Math.PI * 2);
         ctx.fillStyle = radialGlow;
         ctx.fill();
 
-        // ─── CENTRAL GLOWING DOT (8–10px diameter: radius 4.4px – 5.0px) ─────
-        // ABSOLUTELY NO circles, rings, crosshairs, borders, or target shapes.
-        const pulse = Math.sin(frame * 0.08) * 0.3;
-        const dotRadius = isDark ? 4.6 + hover * 0.6 + pulse : 4.4 + hover * 0.5 + pulse;
+        // ─── CENTRAL GLOWING BLUE DOT (clearly visible, slightly larger) ────
+        // Radius ~5.5px base (+1.3px hover, -1.2px text precision, -0.8px click)
+        const pulse = Math.sin(frame * 0.07) * 0.25;
+        const dotRadius = Math.max(
+          3.8,
+          5.5 + hover * 1.3 - text * 1.2 - click * 0.8 + pulse,
+        );
+
+        // Light mode contrast shadow behind core dot (crisp visibility on white backgrounds)
+        if (!isD) {
+          ctx.beginPath();
+          ctx.arc(headX, headY, dotRadius + 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(15, 23, 42, ${(0.18 * opacity).toFixed(3)})`;
+          ctx.fill();
+        }
 
         // Core base (solid cobalt blue)
         ctx.beginPath();
         ctx.arc(headX, headY, dotRadius, 0, Math.PI * 2);
-        ctx.fillStyle = isDark
-          ? `rgba(96, 165, 250, ${(0.96 * opacity).toFixed(3)})`
-          : `rgba(37, 99, 235, ${(0.95 * opacity).toFixed(3)})`;
+        ctx.fillStyle = isD
+          ? `rgba(59, 130, 246, ${(0.96 * opacity).toFixed(3)})`
+          : `rgba(29, 78, 216, ${(0.98 * opacity).toFixed(3)})`;
         ctx.fill();
 
-        // Subtle lighter-blue highlight overlay inside the core
+        // Bright cyan-blue highlight overlay inside core
         const highlightRadius = dotRadius * 0.62;
         ctx.beginPath();
         ctx.arc(headX, headY, highlightRadius, 0, Math.PI * 2);
-        ctx.fillStyle = isDark
+        ctx.fillStyle = isD
           ? `rgba(34, 211, 238, ${(0.98 * opacity).toFixed(3)})`
-          : `rgba(96, 165, 250, ${(0.94 * opacity).toFixed(3)})`;
+          : `rgba(56, 189, 248, ${(0.95 * opacity).toFixed(3)})`;
         ctx.fill();
 
-        // Pinpoint bright specular spark at center
-        const pinRadius = dotRadius * 0.32;
+        // Pinpoint specular white spark at center
+        const pinRadius = dotRadius * 0.3;
         ctx.beginPath();
         ctx.arc(headX, headY, pinRadius, 0, Math.PI * 2);
-        ctx.fillStyle = isDark
-          ? `rgba(255, 255, 255, ${(0.95 * opacity).toFixed(3)})`
-          : `rgba(224, 242, 254, ${(0.92 * opacity).toFixed(3)})`;
+        ctx.fillStyle = isD
+          ? `rgba(255, 255, 255, ${(0.96 * opacity).toFixed(3)})`
+          : `rgba(255, 255, 255, ${(0.95 * opacity).toFixed(3)})`;
         ctx.fill();
       }
 
-      // Update and draw click sparkle particles (NO expanding circles or rings)
+      // Update and draw click sparkle particles
       const sparks = sparksRef.current;
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i];
         s.x += s.vx;
         s.y += s.vy;
-        s.vx *= 0.93;
-        s.vy *= 0.93;
+        s.vx *= 0.92;
+        s.vy *= 0.92;
         s.life -= 1 / s.maxLife;
 
         if (s.life <= 0) {
@@ -370,18 +499,18 @@ export function CustomCursor() {
           continue;
         }
 
-        const sparkAlpha = Math.max(0, s.life) * (isDark ? 0.95 : 0.85);
+        const sparkAlpha = Math.max(0, s.life) * (isD ? 0.95 : 0.88);
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
 
-        if (isDark) {
+        if (isD) {
           ctx.fillStyle = s.color === "#60A5FA"
             ? `rgba(96, 165, 250, ${sparkAlpha.toFixed(3)})`
             : `rgba(34, 211, 238, ${sparkAlpha.toFixed(3)})`;
         } else {
           ctx.fillStyle = s.color === "#2563EB"
-            ? `rgba(37, 99, 235, ${sparkAlpha.toFixed(3)})`
-            : `rgba(96, 165, 250, ${sparkAlpha.toFixed(3)})`;
+            ? `rgba(29, 78, 216, ${sparkAlpha.toFixed(3)})`
+            : `rgba(56, 189, 248, ${sparkAlpha.toFixed(3)})`;
         }
         ctx.fill();
       }
@@ -393,16 +522,27 @@ export function CustomCursor() {
 
     return () => {
       cancelAnimationFrame(animationId);
+      dialogObserver.disconnect();
       motionQuery.removeEventListener("change", onMotionQueryChange);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerCancel);
       document.documentElement.removeEventListener("mouseleave", onMouseLeave);
       document.documentElement.removeEventListener("mouseenter", onMouseEnter);
-      window.removeEventListener("blur", onWindowBlur);
+      window.removeEventListener("focus", onWindowFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       document.documentElement.classList.remove("has-custom-cursor");
+      if (typeof canvas.hidePopover === "function") {
+        try {
+          if (canvas.matches(":popover-open")) canvas.hidePopover();
+        } catch {
+          // ignore
+        }
+      }
     };
-  }, [hasFinePointer, isDark]);
+  }, [hasFinePointer]);
 
   if (!hasFinePointer) return null;
 
@@ -410,7 +550,7 @@ export function CustomCursor() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[99999] select-none"
+      className="custom-cursor-canvas pointer-events-none fixed inset-0 z-[2147483647] select-none"
     />
   );
 }

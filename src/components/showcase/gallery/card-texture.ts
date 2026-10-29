@@ -9,11 +9,25 @@ export type CardArt = {
   coverUrl: string | null;
 };
 
+export type CardTextureController = {
+  texture: THREE.CanvasTexture;
+  redraw: () => void;
+  isDisposed: () => boolean;
+  dispose: () => void;
+};
+
 const W = 1024;
 const H = 640;
 const R = 40;
 
+// In-memory image cache for decoded cover images to eliminate re-fetching delays,
+// CORS cache conflicts, and texture flickering across route transitions.
+const coverImageCache = new Map<string, HTMLImageElement>();
+
 function fonts() {
+  if (typeof document === "undefined") {
+    return { sans: "system-ui, sans-serif", mono: "ui-monospace, monospace" };
+  }
   const style = getComputedStyle(document.documentElement);
   const sans = style.getPropertyValue("--font-geist-sans").trim() || "system-ui, sans-serif";
   const mono = style.getPropertyValue("--font-geist-mono").trim() || "ui-monospace, monospace";
@@ -94,11 +108,13 @@ function drawAbstractCover(ctx: CanvasRenderingContext2D, art: CardArt, sans: st
   ctx.fillText(initials(art.title), 56, 300);
 }
 
-function drawImageCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement) {
+function drawImageCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement): boolean {
+  if (!img.naturalWidth || !img.naturalHeight) return false;
   const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
   const w = img.naturalWidth * scale;
   const h = img.naturalHeight * scale;
   ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+  return true;
 }
 
 function draw(ctx: CanvasRenderingContext2D, art: CardArt, img: HTMLImageElement | null) {
@@ -108,8 +124,13 @@ function draw(ctx: CanvasRenderingContext2D, art: CardArt, img: HTMLImageElement
   roundRect(ctx, 0, 0, W, H, R);
   ctx.clip();
 
-  if (img) drawImageCover(ctx, img);
-  else drawAbstractCover(ctx, art, sans);
+  let hasImage = false;
+  if (img) {
+    hasImage = drawImageCover(ctx, img);
+  }
+  if (!hasImage) {
+    drawAbstractCover(ctx, art, sans);
+  }
 
   // Legibility scrim behind the text block.
   const scrim = ctx.createLinearGradient(0, H * 0.32, 0, H);
@@ -194,11 +215,15 @@ function draw(ctx: CanvasRenderingContext2D, art: CardArt, img: HTMLImageElement
 }
 
 /**
- * Card artwork rendered once into a 1024×640 canvas texture: the real cover
+ * Card artwork rendered into a 1024×640 canvas texture: the real cover
  * image when one exists, otherwise an abstract cover from the title and
- * category (never a fake screenshot). Redraws when the image and fonts load.
+ * category (never a blank/black canvas). Redraws when images or fonts load.
  */
-export function createCardTexture(art: CardArt, maxAnisotropy: number) {
+export function createCardTexture(
+  art: CardArt,
+  maxAnisotropy: number,
+  onUpdate?: () => void,
+): CardTextureController {
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -209,32 +234,83 @@ export function createCardTexture(art: CardArt, maxAnisotropy: number) {
 
   let img: HTMLImageElement | null = null;
   let disposed = false;
+
   const redraw = () => {
     if (disposed) return;
     draw(ctx, art, img);
     texture.needsUpdate = true;
+    onUpdate?.();
   };
 
+  // Immediate synchronous initial draw (always draws abstract cover first so canvas is NEVER black)
   redraw();
-  void document.fonts?.ready.then(redraw);
+
+  // Re-render when fonts finish loading so typography is crisp
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    void document.fonts.ready.then(() => {
+      if (!disposed) redraw();
+    });
+  }
 
   if (art.coverUrl) {
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.decoding = "async";
-    image.onload = () => {
-      img = image;
+    const cached = coverImageCache.get(art.coverUrl);
+    if (cached && cached.naturalWidth > 0 && cached.naturalHeight > 0) {
+      img = cached;
       redraw();
-    };
-    image.src = art.coverUrl;
+    } else {
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      image.decoding = "async";
+
+      image.onload = () => {
+        if (disposed) return;
+        if (image.naturalWidth > 0 && image.naturalHeight > 0) {
+          coverImageCache.set(art.coverUrl!, image);
+          img = image;
+          redraw();
+        }
+      };
+
+      image.onerror = () => {
+        if (disposed) return;
+        // If anonymous crossOrigin was blocked (e.g. browser cache conflict),
+        // try loading without crossOrigin attribute
+        const fallback = new Image();
+        fallback.onload = () => {
+          if (disposed) return;
+          if (fallback.naturalWidth > 0 && fallback.naturalHeight > 0) {
+            coverImageCache.set(art.coverUrl!, fallback);
+            img = fallback;
+            redraw();
+          }
+        };
+        fallback.onerror = () => {
+          // Keep abstract cover; never leave the card black
+          img = null;
+          redraw();
+        };
+        fallback.src = art.coverUrl!;
+      };
+
+      image.src = art.coverUrl;
+
+      // Check if image is already cached and completed synchronously
+      if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
+        coverImageCache.set(art.coverUrl, image);
+        img = image;
+        redraw();
+      }
+    }
   }
 
   return {
     texture,
+    redraw,
+    isDisposed: () => disposed,
     dispose() {
       disposed = true;
       texture.dispose();
-      canvas.width = canvas.height = 0;
+      // DO NOT set canvas.width = 0 to avoid breaking any inflight WebGL frame
     },
   };
 }

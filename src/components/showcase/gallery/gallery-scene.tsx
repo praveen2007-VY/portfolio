@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ContactShadows, Environment, Grid, Lightformer } from "@react-three/drei";
 import type { MotionValue } from "framer-motion";
 import * as THREE from "three";
-import { createCardTexture, type CardArt } from "@/components/showcase/gallery/card-texture";
+import { createCardTexture, type CardArt, type CardTextureController } from "@/components/showcase/gallery/card-texture";
 import {
   cameraPose,
   CARD_H,
@@ -90,10 +90,121 @@ type GestureState = {
   startPoint: THREE.Vector3 | null;
 };
 
+type SharedResources = {
+  face: THREE.ShapeGeometry;
+  slab: THREE.ExtrudeGeometry;
+  rim: THREE.BufferGeometry;
+  slabMaterial: THREE.MeshPhysicalMaterial;
+  gloss: THREE.MeshPhysicalMaterial;
+  halo: THREE.CanvasTexture;
+  isDisposed: () => boolean;
+  dispose: () => void;
+};
+
+type PerCardResource = {
+  art: CardTextureController;
+  face: THREE.MeshBasicMaterial;
+  rim: THREE.LineBasicMaterial;
+};
+
+function createShared(isDark: boolean): SharedResources {
+  const face = new THREE.ShapeGeometry(roundedRect(CARD_W, CARD_H, 0.14), 10);
+  const pos = face.attributes.position;
+  const uv = face.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, (pos.getX(i) + CARD_W / 2) / CARD_W, (pos.getY(i) + CARD_H / 2) / CARD_H);
+  }
+  const slab = new THREE.ExtrudeGeometry(roundedRect(CARD_W + 0.06, CARD_H + 0.06, 0.16), {
+    depth: 0.06,
+    bevelEnabled: true,
+    bevelThickness: 0.018,
+    bevelSize: 0.018,
+    bevelSegments: 3,
+    curveSegments: 10,
+  });
+  slab.translate(0, 0, -0.085);
+  const rim = new THREE.BufferGeometry().setFromPoints(
+    roundedRect(CARD_W + 0.02, CARD_H + 0.02, 0.15)
+      .getPoints(12)
+      .map((p) => new THREE.Vector3(p.x, p.y, 0.012)),
+  );
+  const slabMaterial = new THREE.MeshPhysicalMaterial({
+    color: "#081024",
+    metalness: isDark ? 0.35 : 0.2,
+    roughness: isDark ? 0.32 : 0.4,
+    clearcoat: 1,
+    clearcoatRoughness: isDark ? 0.12 : 0.16,
+  });
+  const gloss = new THREE.MeshPhysicalMaterial({
+    color: "#ffffff",
+    transparent: true,
+    opacity: isDark ? 0.07 : 0.035,
+    roughness: 0.05,
+    metalness: 0,
+    clearcoat: 1,
+    depthWrite: false,
+  });
+  const halo = radialTexture(
+    isDark
+      ? [
+          [0, "rgba(37,99,235,0.55)"],
+          [0.5, "rgba(37,99,235,0.14)"],
+          [1, "rgba(37,99,235,0)"],
+        ]
+      : [
+          [0, "rgba(37,99,235,0.28)"],
+          [0.5, "rgba(37,99,235,0.07)"],
+          [1, "rgba(37,99,235,0)"],
+        ],
+  );
+
+  let disposed = false;
+  return {
+    face,
+    slab,
+    rim,
+    slabMaterial,
+    gloss,
+    halo,
+    isDisposed: () => disposed,
+    dispose: () => {
+      disposed = true;
+      face.dispose();
+      slab.dispose();
+      rim.dispose();
+      slabMaterial.dispose();
+      gloss.dispose();
+      halo.dispose();
+    },
+  };
+}
+
+function createPerCard(
+  cards: GalleryCard[],
+  featuredIndex: number,
+  gl: THREE.WebGLRenderer,
+  isDark: boolean,
+  invalidate: () => void,
+): PerCardResource[] {
+  const anisotropy = gl.capabilities.getMaxAnisotropy();
+  return cards.map((card, i) => {
+    const art = createCardTexture(card, anisotropy, invalidate);
+    return {
+      art,
+      face: new THREE.MeshBasicMaterial({ map: art.texture, toneMapped: false, transparent: true }),
+      rim: new THREE.LineBasicMaterial({
+        color: isDark ? "#7dd3fc" : "#2563eb",
+        transparent: true,
+        opacity: i === featuredIndex ? (isDark ? 0.45 : 0.35) : (isDark ? 0.22 : 0.15),
+      }),
+    };
+  });
+}
+
 function Gallery(props: GallerySceneProps) {
   const { cards, featuredIndex, activeProject, compact, animate, theme = "dark", selected } = props;
   const isDark = theme === "dark";
-  const { gl, camera, size } = useThree();
+  const { gl, camera, size, invalidate } = useThree();
 
   const currentActive = activeProject ?? (selected !== null ? selected : featuredIndex);
   const slots = useMemo(
@@ -103,95 +214,67 @@ function Gallery(props: GallerySceneProps) {
   const extent = useMemo(() => layoutExtentX(slots), [slots]);
 
   // GPU resources: created once per content change, disposed on change/unmount.
-  const shared = useMemo(() => {
-    const face = new THREE.ShapeGeometry(roundedRect(CARD_W, CARD_H, 0.14), 10);
-    const pos = face.attributes.position;
-    const uv = face.attributes.uv;
-    for (let i = 0; i < pos.count; i++) {
-      uv.setXY(i, (pos.getX(i) + CARD_W / 2) / CARD_W, (pos.getY(i) + CARD_H / 2) / CARD_H);
-    }
-    const slab = new THREE.ExtrudeGeometry(roundedRect(CARD_W + 0.06, CARD_H + 0.06, 0.16), {
-      depth: 0.06,
-      bevelEnabled: true,
-      bevelThickness: 0.018,
-      bevelSize: 0.018,
-      bevelSegments: 3,
-      curveSegments: 10,
-    });
-    slab.translate(0, 0, -0.085);
-    const rim = new THREE.BufferGeometry().setFromPoints(
-      roundedRect(CARD_W + 0.02, CARD_H + 0.02, 0.15)
-        .getPoints(12)
-        .map((p) => new THREE.Vector3(p.x, p.y, 0.012)),
-    );
-    const slabMaterial = new THREE.MeshPhysicalMaterial({
-      color: "#081024",
-      metalness: isDark ? 0.35 : 0.2,
-      roughness: isDark ? 0.32 : 0.4,
-      clearcoat: 1,
-      clearcoatRoughness: isDark ? 0.12 : 0.16,
-    });
-    const gloss = new THREE.MeshPhysicalMaterial({
-      color: "#ffffff",
-      transparent: true,
-      opacity: isDark ? 0.07 : 0.035,
-      roughness: 0.05,
-      metalness: 0,
-      clearcoat: 1,
-      depthWrite: false,
-    });
-    const halo = radialTexture(
-      isDark
-        ? [
-            [0, "rgba(37,99,235,0.55)"],
-            [0.5, "rgba(37,99,235,0.14)"],
-            [1, "rgba(37,99,235,0)"],
-          ]
-        : [
-            [0, "rgba(37,99,235,0.28)"],
-            [0.5, "rgba(37,99,235,0.07)"],
-            [1, "rgba(37,99,235,0)"],
-          ],
-    );
-    return { face, slab, rim, slabMaterial, gloss, halo };
-  }, [isDark]);
-  useEffect(
-    () => () => {
-      shared.face.dispose();
-      shared.slab.dispose();
-      shared.rim.dispose();
-      shared.slabMaterial.dispose();
-      shared.gloss.dispose();
-      shared.halo.dispose();
-    },
-    [shared],
+  const shared = useMemo(() => createShared(isDark), [isDark]);
+  const perCard = useMemo(
+    () => createPerCard(cards, featuredIndex, gl, isDark, invalidate),
+    [cards, featuredIndex, gl, isDark, invalidate],
   );
 
-  const perCard = useMemo(() => {
-    const anisotropy = gl.capabilities.getMaxAnisotropy();
-    return cards.map((card, i) => {
-      const art = createCardTexture(card, anisotropy);
-      return {
-        art,
-        face: new THREE.MeshBasicMaterial({ map: art.texture, toneMapped: false, transparent: true }),
-        rim: new THREE.LineBasicMaterial({
-          color: isDark ? "#7dd3fc" : "#2563eb",
-          transparent: true,
-          opacity: i === featuredIndex ? (isDark ? 0.45 : 0.35) : (isDark ? 0.22 : 0.15),
-        }),
-      };
-    });
-  }, [cards, featuredIndex, gl, isDark]);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    return () => {
+      shared.dispose();
+    };
+  }, [shared]);
+
+  useEffect(() => {
+    return () => {
       for (const c of perCard) {
         c.art.dispose();
         c.face.dispose();
         c.rim.dispose();
       }
-    },
-    [perCard],
-  );
+    };
+  }, [perCard]);
+
+  // Keep refs up-to-date inside effect for event handlers (e.g. WebGL context restoration)
+  const sharedRef = useRef(shared);
+  const perCardRef = useRef(perCard);
+  useEffect(() => {
+    sharedRef.current = shared;
+    perCardRef.current = perCard;
+  }, [shared, perCard]);
+
+  // WebGL Context Loss and Restoration Handler
+  useEffect(() => {
+    const canvas = gl.domElement;
+    if (!canvas) return;
+
+    const onContextLost = (event: Event) => {
+      event.preventDefault(); // Tells browser to allow WebGL context restoration
+    };
+
+    const onContextRestored = () => {
+      if (perCardRef.current) {
+        for (const c of perCardRef.current) {
+          c.art.redraw();
+          c.face.needsUpdate = true;
+        }
+      }
+      if (sharedRef.current) {
+        sharedRef.current.slabMaterial.needsUpdate = true;
+        sharedRef.current.gloss.needsUpdate = true;
+      }
+      invalidate();
+    };
+
+    canvas.addEventListener("webglcontextlost", onContextLost);
+    canvas.addEventListener("webglcontextrestored", onContextRestored);
+
+    return () => {
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored);
+    };
+  }, [gl, invalidate]);
 
   const pivot = useRef<THREE.Group>(null);
   const cardGroups = useRef<(THREE.Group | null)[]>([]);
@@ -202,9 +285,9 @@ function Gallery(props: GallerySceneProps) {
     pitch: 0,
     vyaw: 0,
     vpitch: 0,
-    offsets: [] as { x: number; y: number }[],
-    shown: [] as { x: number; y: number }[],
-    dim: [] as number[],
+    offsets: cards.map(() => ({ x: 0, y: 0 })),
+    shown: cards.map(() => ({ x: 0, y: 0 })),
+    dim: cards.map(() => 1),
     hovered: -1,
     pointer: { x: 0, y: 0 },
     gesture: null as GestureState | null,
@@ -217,7 +300,7 @@ function Gallery(props: GallerySceneProps) {
     const s = state.current;
     s.offsets = cards.map((_, i) => s.offsets[i] ?? { x: 0, y: 0 });
     s.shown = cards.map((_, i) => s.shown[i] ?? { x: 0, y: 0 });
-    s.dim = cards.map((_, i) => s.dim[i] ?? 1);
+    s.dim = cards.map((_, i) => (typeof s.dim[i] === "number" && !Number.isNaN(s.dim[i]) ? s.dim[i] : 1));
   }, [cards]);
 
   // Latest props for the imperative handlers below.
@@ -450,7 +533,10 @@ function Gallery(props: GallerySceneProps) {
       g.rotation.x = damp(g.rotation.x, slot.rotX, 6, dt);
       g.scale.setScalar(damp(g.scale.x, slot.scale * (isSelected ? 1.04 : 1), 6, dt));
 
-      s.dim[i] = damp(s.dim[i], receded ? 0.65 : 1, 6, dt);
+      // Guard against undefined or NaN dim value
+      const currentDim = typeof s.dim[i] === "number" && !Number.isNaN(s.dim[i]) ? s.dim[i] : 1;
+      const nextDim = damp(currentDim, receded ? 0.65 : 1, 6, dt);
+      s.dim[i] = Number.isNaN(nextDim) ? (receded ? 0.65 : 1) : nextDim;
       c.face.color.setScalar(s.dim[i]);
       c.rim.opacity = damp(
         c.rim.opacity,
@@ -563,7 +649,7 @@ export default function GalleryScene(props: GallerySceneProps) {
       dpr={props.compact ? [1, 1.25] : [1, 1.75]}
       camera={{ fov: props.compact ? 50 : 36, position: [0, 3.4, 15], near: 0.1, far: 80 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-      frameloop={props.running ? "always" : "never"}
+      frameloop={props.running ? "always" : "demand"}
       style={{ touchAction: "pan-y" }}
     >
       {isDark && <fog attach="fog" args={[SCENE_BG_DARK, 14, 38]} />}
