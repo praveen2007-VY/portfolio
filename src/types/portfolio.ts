@@ -166,6 +166,12 @@ export type ExperienceRow = ContentBase & {
   summary: string | null;
   highlights: string[];
   technologies: string[];
+  certificate_title?: string | null;
+  certificate_organization?: string | null;
+  certificate_date?: PartialDate | null;
+  certificate_url?: string | null;
+  certificate_image_path?: string | null;
+  certificate_pdf_path?: string | null;
 };
 
 export type EducationRow = ContentBase & {
@@ -203,6 +209,11 @@ export type PublicProject = ProjectRow & {
 
 export type PublicAchievement = AchievementRow & { image_url: string | null };
 
+export type PublicExperience = ExperienceRow & {
+  certificate_image_url: string | null;
+  certificate_pdf_url: string | null;
+};
+
 export type PortfolioData = {
   source: "database" | "fallback" | "unavailable";
   profile: PublicProfile & { avatar_url: string | null };
@@ -212,7 +223,7 @@ export type PortfolioData = {
   achievements: PublicAchievement[];
   codingProfiles: CodingProfileRow[];
   skills: SkillRow[];
-  experiences: ExperienceRow[];
+  experiences: PublicExperience[];
   education: EducationRow[];
   contactEnabled: boolean;
   generatedAt: string;

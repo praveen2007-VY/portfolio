@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   contactSchema,
+  experienceSchema,
   loginSchema,
   profileSchema,
   projectSchema,
@@ -37,6 +38,60 @@ describe("projectSchema", () => {
     expect(projectSchema.safeParse({ ...baseProject, cover_path: "../secret.png" }).success).toBe(false);
     expect(
       projectSchema.safeParse({ ...baseProject, start_date: "2026-05", end_date: "2025-01" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("experienceSchema", () => {
+  const baseExperience = {
+    role: "DevOps with AWS Intern",
+    organization: "Finest Coder / Codingmart Technologies",
+    start_date: "2026-05",
+    end_date: "2026-06",
+    is_current: false,
+    highlights: ["Set up cloud infrastructure"],
+    technologies: ["AWS", "Linux"],
+    is_published: true,
+  };
+
+  it("accepts valid experience without certificate", () => {
+    const parsed = experienceSchema.parse(baseExperience);
+    expect(parsed.certificate_title).toBeNull();
+    expect(parsed.certificate_image_path).toBeNull();
+    expect(parsed.certificate_pdf_path).toBeNull();
+  });
+
+  it("accepts valid experience with certificate metadata and file paths", () => {
+    const parsed = experienceSchema.parse({
+      ...baseExperience,
+      certificate_title: "AWS DevOps Internship Certificate",
+      certificate_organization: "Finest Coder",
+      certificate_date: "2026-06",
+      certificate_url: "https://example.com/verify/123",
+      certificate_image_path: "certificates/images/11111111-1111-4111-8111-111111111111.png",
+      certificate_pdf_path: "certificates/pdfs/22222222-2222-4222-8222-222222222222.pdf",
+    });
+    expect(parsed.certificate_title).toBe("AWS DevOps Internship Certificate");
+    expect(parsed.certificate_image_path).toBe(
+      "certificates/images/11111111-1111-4111-8111-111111111111.png",
+    );
+    expect(parsed.certificate_pdf_path).toBe(
+      "certificates/pdfs/22222222-2222-4222-8222-222222222222.pdf",
+    );
+  });
+
+  it("rejects invalid certificate file paths or URLs", () => {
+    expect(
+      experienceSchema.safeParse({
+        ...baseExperience,
+        certificate_image_path: "../malicious.png",
+      }).success,
+    ).toBe(false);
+    expect(
+      experienceSchema.safeParse({
+        ...baseExperience,
+        certificate_url: "javascript:alert(1)",
+      }).success,
     ).toBe(false);
   });
 });

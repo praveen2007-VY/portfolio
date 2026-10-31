@@ -4,11 +4,13 @@ import {
   SECTION_KEYS,
   type AchievementRow,
   type CertificateRow,
+  type ExperienceRow,
   type PortfolioData,
   type ProfileRow,
   type ProjectRow,
   type PublicAchievement,
   type PublicCertificate,
+  type PublicExperience,
   type PublicProfile,
   type PublicProject,
   type SectionsConfig,
@@ -86,6 +88,16 @@ export function toPublicCertificate(row: CertificateRow): PublicCertificate {
     ...rest,
     image_url: image_path ? `/certificates/${row.id}/image` : null,
     pdf_url: pdf_path ? `/certificates/${row.id}/pdf` : null,
+  };
+}
+
+export function toPublicExperience(row: ExperienceRow): PublicExperience {
+  return {
+    ...row,
+    highlights: row.highlights ?? [],
+    technologies: row.technologies ?? [],
+    certificate_image_url: row.certificate_image_path ? `/certificates/${row.id}/image` : null,
+    certificate_pdf_url: row.certificate_pdf_path ? `/certificates/${row.id}/pdf` : null,
   };
 }
 

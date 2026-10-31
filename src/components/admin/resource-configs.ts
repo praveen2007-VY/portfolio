@@ -194,7 +194,12 @@ export const RESOURCE_UI: Record<ResourceKey, ResourceUI> = {
     summary: (row) => ({
       title: s(row.role),
       subtitle: s(row.organization),
-      meta: formatDateRange(s(row.start_date), s(row.end_date), Boolean(row.is_current)),
+      meta: [
+        formatDateRange(s(row.start_date), s(row.end_date), Boolean(row.is_current)),
+        row.certificate_pdf_path || row.certificate_image_path ? "Certificate attached" : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
     }),
     fields: () => [
       { name: "role", label: "Role", type: "text", required: true, span: "half" },
@@ -207,6 +212,18 @@ export const RESOURCE_UI: Record<ResourceKey, ResourceUI> = {
       { name: "summary", label: "Summary", type: "textarea", rows: 2 },
       { name: "highlights", label: "Highlights", type: "list" },
       { name: "technologies", label: "Technologies", type: "tags" },
+      {
+        name: "_section_certificate",
+        type: "section",
+        title: "Internship Certificate",
+        description: "Attach an internship completion certificate to this work experience entry.",
+      },
+      { name: "certificate_title", label: "Certificate title", type: "text" },
+      { name: "certificate_organization", label: "Certificate issuing organization", type: "text", span: "half" },
+      { name: "certificate_date", label: "Certificate issue date", type: "date", span: "half", help: dateHelp },
+      { name: "certificate_url", label: "Certificate verification URL", type: "url" },
+      { name: "certificate_image_path", label: "Certificate image", type: "file", kind: "certificate-image" },
+      { name: "certificate_pdf_path", label: "Certificate PDF", type: "file", kind: "certificate-pdf" },
     ],
   },
   education: {
@@ -241,6 +258,7 @@ export const RESOURCE_UI: Record<ResourceKey, ResourceUI> = {
 export function rowToForm(fields: FieldDef[], row: Row | null): Record<string, unknown> {
   const values: Record<string, unknown> = {};
   for (const field of fields) {
+    if (field.type === "section") continue;
     const raw = row?.[field.name];
     switch (field.type) {
       case "tags":

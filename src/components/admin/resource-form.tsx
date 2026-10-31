@@ -60,6 +60,9 @@ export function ResourceForm({ ui, row, rows, onDone, onDirtyChange }: ResourceF
       return;
     }
     for (const [name, message] of Object.entries(result.fieldErrors ?? {})) setError(name, { message });
+    if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+      setError("_form", { message: result.error });
+    }
     toast("error", result.error);
   }
 

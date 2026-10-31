@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils/format";
 type Base = { name: string; label: string; help?: string; span?: "full" | "half"; required?: boolean };
 
 export type FieldDef =
+  | { type: "section"; name: string; title: string; description?: string }
   | (Base & {
       type: "text" | "url" | "email" | "date" | "number" | "slug";
       placeholder?: string;
@@ -37,6 +38,18 @@ function errorOf(errors: FieldErrors<FieldValues>, name: string): string | undef
 
 export function Field({ field, control, register, errors, setFileName }: FieldProps) {
   const id = useId();
+  if (field.type === "section") {
+    return (
+      <div className="sm:col-span-2 mt-4 pt-5 pb-1 border-t border-line/70">
+        <h4 className="text-[15px] font-semibold tracking-tight text-ink flex items-center gap-2">
+          {field.title}
+        </h4>
+        {field.description && (
+          <p className="mt-1 text-[13px] text-muted">{field.description}</p>
+        )}
+      </div>
+    );
+  }
   const error = errorOf(errors, field.name);
   const describedBy = [field.help && `${id}-help`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
   const common = { id, "aria-invalid": Boolean(error), "aria-describedby": describedBy };

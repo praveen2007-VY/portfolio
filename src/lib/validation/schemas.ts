@@ -169,6 +169,12 @@ export const experienceSchema = z
     summary: optionalText(1000),
     highlights: stringList(20),
     technologies: stringList(30, 60),
+    certificate_title: optionalText(200),
+    certificate_organization: optionalText(160),
+    certificate_date: optionalPartialDate,
+    certificate_url: optionalUrl,
+    certificate_image_path: storagePath("certificate-image"),
+    certificate_pdf_path: storagePath("certificate-pdf"),
     is_published: bool,
   })
   .refine(dateRange, dateRangeError);

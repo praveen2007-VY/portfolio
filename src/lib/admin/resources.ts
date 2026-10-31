@@ -55,7 +55,10 @@ export const RESOURCES = {
     table: "experiences",
     singular: "experience",
     schema: experienceSchema,
-    files: {},
+    files: {
+      certificate_image_path: "certificate-image",
+      certificate_pdf_path: "certificate-pdf",
+    },
     flags: ["is_published"],
   },
   education: {

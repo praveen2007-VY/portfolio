@@ -7,20 +7,31 @@ const params = z.object({ id: z.uuid(), kind: z.enum(["image", "pdf"]) });
 /**
  * Serves a certificate file from the private bucket via a short-lived signed
  * URL. The query runs with the visitor's session, so RLS only returns
- * published certificates to the public (admins can also open drafts).
+ * published certificates or experiences to the public (admins can also open drafts).
  */
 export async function GET(_request: Request, ctx: RouteContext<"/certificates/[id]/[kind]">) {
   const parsed = params.safeParse(await ctx.params);
   if (!parsed.success || !isSupabaseConfigured()) return new Response("Not found", { status: 404 });
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
+  const { data: cert } = await supabase
     .from("certificates")
     .select("image_path, pdf_path")
     .eq("id", parsed.data.id)
     .maybeSingle();
-  const path = parsed.data.kind === "image" ? data?.image_path : data?.pdf_path;
-  if (error || !path) return new Response("Not found", { status: 404 });
+
+  let path = parsed.data.kind === "image" ? cert?.image_path : cert?.pdf_path;
+
+  if (!path) {
+    const { data: exp } = await supabase
+      .from("experiences")
+      .select("certificate_image_path, certificate_pdf_path")
+      .eq("id", parsed.data.id)
+      .maybeSingle();
+    path = parsed.data.kind === "image" ? exp?.certificate_image_path : exp?.certificate_pdf_path;
+  }
+
+  if (!path) return new Response("Not found", { status: 404 });
 
   const { data: signed, error: signError } = await supabase.storage
     .from("documents")

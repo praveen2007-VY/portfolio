@@ -56,23 +56,34 @@ export async function removeStoredFiles(
   }
 }
 
+type FileRef = { table: string; column: string; array?: boolean };
+
 /** Where each upload kind may be referenced, to avoid deleting files in use. */
-const REFERENCES: Record<UploadKind, { table: string; column: string; array?: boolean }> = {
-  avatar: { table: "profiles", column: "avatar_path" },
-  resume: { table: "profiles", column: "resume_path" },
-  "project-cover": { table: "projects", column: "cover_path" },
-  "project-screenshot": { table: "projects", column: "screenshot_paths", array: true },
-  "achievement-image": { table: "achievements", column: "image_path" },
-  "certificate-image": { table: "certificates", column: "image_path" },
-  "certificate-pdf": { table: "certificates", column: "pdf_path" },
+const REFERENCES: Record<UploadKind, FileRef[]> = {
+  avatar: [{ table: "profiles", column: "avatar_path" }],
+  resume: [{ table: "profiles", column: "resume_path" }],
+  "project-cover": [{ table: "projects", column: "cover_path" }],
+  "project-screenshot": [{ table: "projects", column: "screenshot_paths", array: true }],
+  "achievement-image": [{ table: "achievements", column: "image_path" }],
+  "certificate-image": [
+    { table: "certificates", column: "image_path" },
+    { table: "experiences", column: "certificate_image_path" },
+  ],
+  "certificate-pdf": [
+    { table: "certificates", column: "pdf_path" },
+    { table: "experiences", column: "certificate_pdf_path" },
+  ],
 };
 
 export async function isFileReferenced(supabase: SupabaseClient, kind: UploadKind, path: string) {
-  const ref = REFERENCES[kind];
-  const query = supabase.from(ref.table).select("id", { count: "exact", head: true });
-  const { count, error } = ref.array
-    ? await query.contains(ref.column, [path])
-    : await query.eq(ref.column, path);
-  if (error) throw new UserFacingError("Could not verify whether the file is in use.");
-  return (count ?? 0) > 0;
+  const refs = REFERENCES[kind];
+  for (const ref of refs) {
+    const query = supabase.from(ref.table).select("id", { count: "exact", head: true });
+    const { count, error } = ref.array
+      ? await query.contains(ref.column, [path])
+      : await query.eq(ref.column, path);
+    if (error) throw new UserFacingError("Could not verify whether the file is in use.");
+    if ((count ?? 0) > 0) return true;
+  }
+  return false;
 }
