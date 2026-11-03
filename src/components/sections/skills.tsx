@@ -21,6 +21,7 @@ const ICONS: [RegExp, LucideIcon][] = [
   [/cloud|devops|aws/i, Cloud],
   [/ai|machine|ml|vision|nlp|intelligence/i, BrainCircuit],
   [/tool/i, Wrench],
+  [/core|computer|science|algorithm/i, Cpu],
 ];
 
 function iconFor(category: string): LucideIcon {
@@ -37,7 +38,13 @@ export function groupSkills(skills: SkillRow[]) {
 export function Skills({ data }: { data: PortfolioData }) {
   const groups = groupSkills(data.skills);
   return (
-    <Section id="skills" config={data.settings.sections.skills}>
+    <Section id="skills" config={data.settings.sections.skills} className="relative">
+      {/* Subtle ambient lighting for light mode */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-[380px] w-full max-w-5xl -translate-x-1/2 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,rgba(37,99,235,0.06),transparent_70%)] dark:hidden"
+      />
+
       {groups.length === 0 ? (
         <EmptyState title="Skills coming soon" />
       ) : (
@@ -45,27 +52,40 @@ export function Skills({ data }: { data: PortfolioData }) {
           {groups.map(({ category, items }, index) => {
             const Icon = iconFor(category);
             return (
-              <Reveal key={category} delay={index * 0.06}>
-                <article className="group relative h-full overflow-hidden rounded-2xl border border-line bg-paper p-6 transition-all duration-500 ease-out hover:-translate-y-1.5 hover:border-accent/45 hover:shadow-lift dark:hover:border-sky-400/35">
+              <Reveal key={category} delay={index * 0.05}>
+                <article className="group showcase-card h-full justify-between p-6">
+                  {/* Light mode soft blue aura on hover */}
                   <div
                     aria-hidden
-                    className="absolute -top-24 -right-24 size-52 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.16),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                    className="pointer-events-none absolute -top-24 -right-24 size-48 rounded-full bg-[radial-gradient(circle,rgba(37,99,235,0.12),transparent_70%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:hidden"
                   />
-                  <div className="flex items-center justify-between">
-                    <span className="grid size-11 place-items-center rounded-xl bg-accent-soft text-accent transition-all duration-500 group-hover:scale-105 group-hover:rotate-[-6deg] group-hover:bg-accent group-hover:text-white dark:group-hover:bg-sky-400 dark:group-hover:text-[#070b16]">
-                      <Icon className="size-5" aria-hidden />
-                    </span>
-                    <span className="font-mono text-[11px] text-subtle">
-                      {String(items.length).padStart(2, "0")}
-                    </span>
+                  {/* Dark mode accent glow on hover (exact original) */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -top-24 -right-24 size-52 rounded-full bg-[radial-gradient(circle,rgb(var(--accent-rgb)/0.16),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100 hidden dark:block"
+                  />
+
+                  <div>
+                    {/* Header: Icon container and Count */}
+                    <div className="flex items-center justify-between">
+                      <span className="showcase-icon-box">
+                        <Icon className="size-5" aria-hidden />
+                      </span>
+                      <span className="showcase-count">
+                        {String(items.length).padStart(2, "0")}
+                      </span>
+                    </div>
+
+                    {/* Category Title */}
+                    <h3 className="mt-5 text-[17px] font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-950 dark:text-ink dark:group-hover:text-ink">
+                      {category}
+                    </h3>
                   </div>
-                  <h3 className="mt-5 text-[17px] font-semibold tracking-tight text-ink">{category}</h3>
-                  <ul className="mt-4 flex flex-wrap gap-1.5">
+
+                  {/* Skills Pills */}
+                  <ul className="mt-5 flex flex-wrap gap-1.5" aria-label={`${category} skills`}>
                     {items.map((skill) => (
-                      <li
-                        key={skill.id}
-                        className="chip transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-accent-soft hover:text-accent-strong dark:hover:border-sky-400/40 dark:hover:bg-sky-400/10 dark:hover:text-sky-300"
-                      >
+                      <li key={skill.id} className="showcase-pill">
                         {skill.name}
                       </li>
                     ))}
