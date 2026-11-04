@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
+import { useSound } from "@/components/portfolio/sound-provider";
 import { useTheme } from "@/components/portfolio/theme-provider";
 import { cn } from "@/lib/utils/format";
 
@@ -13,14 +14,21 @@ const emptySubscribe = () => () => {};
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
+  const { playSound } = useSound();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const isDark = mounted ? theme === "dark" : false;
 
+  const handleToggle = () => {
+    toggleTheme();
+    playSound("theme");
+  };
+
   return (
     <button
       type="button"
-      onClick={toggleTheme}
+      data-sound="none"
+      onClick={handleToggle}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className={cn(

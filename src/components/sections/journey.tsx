@@ -5,6 +5,7 @@ import { motion, useScroll } from "framer-motion";
 import { Award, Briefcase, Download, ExternalLink, GraduationCap, MapPin, X } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { EmptyState, Section } from "@/components/ui/section";
+import { useSound } from "@/components/portfolio/sound-provider";
 import { formatDateRange, formatPartialDate } from "@/lib/utils/format";
 import type { PortfolioData } from "@/types/portfolio";
 
@@ -27,13 +28,16 @@ export function Journey({ data }: { data: PortfolioData }) {
     target: timelineRef,
     offset: ["start 75%", "end 50%"],
   });
+  const { playSound } = useSound();
 
   function openViewer(cert: CertificateViewerState) {
+    playSound("open");
     setViewingCert(cert);
     dialogRef.current?.showModal();
   }
 
   function closeViewer() {
+    playSound("close");
     dialogRef.current?.close();
     setViewingCert(null);
   }
@@ -279,6 +283,7 @@ export function Journey({ data }: { data: PortfolioData }) {
                 <button
                   type="button"
                   onClick={closeViewer}
+                  data-sound="none"
                   className="grid size-9 place-items-center rounded-lg text-ink-2 hover:bg-mist hover:text-ink transition-colors"
                   aria-label="Close certificate preview"
                 >

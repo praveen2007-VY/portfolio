@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getSiteUrl } from "@/lib/env";
+import { SoundProvider } from "@/components/portfolio/sound-provider";
 import { ThemeProvider } from "@/components/portfolio/theme-provider";
 import { CustomCursor } from "@/components/ui/custom-cursor";
 import "./globals.css";
@@ -38,8 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-dvh bg-paper text-ink">
         <ThemeProvider>
-          {children}
-          <CustomCursor />
+          <SoundProvider>
+            {children}
+            <CustomCursor />
+          </SoundProvider>
         </ThemeProvider>
       </body>
     </html>

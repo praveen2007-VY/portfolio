@@ -7,6 +7,7 @@ import { Hand, MousePointerClick, RotateCcw, ScrollText } from "lucide-react";
 import { DetailsPanel } from "@/components/showcase/gallery/details-panel";
 import type { GalleryCard } from "@/components/showcase/gallery/gallery-scene";
 import { StudioBackdrop } from "@/components/showcase/gallery/studio-backdrop";
+import { useSound } from "@/components/portfolio/sound-provider";
 import { useTheme } from "@/components/portfolio/theme-provider";
 import { cn } from "@/lib/utils/format";
 import type { PublicProject, SectionConfig } from "@/types/portfolio";
@@ -53,6 +54,7 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
 
   // Access the current theme so we can style the scene and UI elements appropriately.
   const { theme } = useTheme();
+  const { playSound } = useSound();
   const isDark = theme === "dark";
 
   const { scrollYProgress } = useScroll({ target: track, offset: ["start start", "end end"] });
@@ -97,35 +99,41 @@ export function ProjectGallery({ projects, basePath, config, compact, onFailure 
     };
   }, []);
 
-  const select = useCallback((index: number | null) => {
-    if (index !== null) {
-      setActiveProject(index);
-      setSelected(index);
-    } else {
-      setSelected(null);
-    }
-  }, []);
+  const select = useCallback(
+    (index: number | null) => {
+      if (index !== null) {
+        playSound("select");
+        setActiveProject(index);
+        setSelected(index);
+      } else {
+        setSelected(null);
+      }
+    },
+    [playSound],
+  );
 
   const markInteracted = useCallback(() => setInteracted(true), []);
 
   // Closing returns focus to the project's button in the index without shifting the center card.
   const close = useCallback(() => {
+    playSound("close");
     if (selected !== null) {
       const button = railButtons.current[selected];
       requestAnimationFrame(() => button?.focus({ preventScroll: true }));
     }
     setSelected(null);
-  }, [selected]);
+  }, [selected, playSound]);
 
   const step = useCallback(
     (delta: number) => {
+      playSound("nav");
       setActiveProject((current) => {
         const next = (current + delta + n) % n;
         setSelected(next);
         return next;
       });
     },
-    [n],
+    [n, playSound],
   );
 
   const resetView = useCallback(() => {

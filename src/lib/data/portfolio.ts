@@ -35,6 +35,33 @@ function unwrap<T>(result: { data: T | null; error: { message: string } | null }
   return (result.data ?? []) as T;
 }
 
+function isNetworkError(error: unknown): boolean {
+  if (!error) return false;
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("fetch failed") ||
+    message.includes("Failed to fetch") ||
+    message.includes("ENOTFOUND") ||
+    message.includes("ECONNREFUSED") ||
+    message.includes("ETIMEDOUT") ||
+    message.includes("ECONNRESET") ||
+    message.includes("UND_ERR") ||
+    message.includes("network")
+  );
+}
+
+async function withRetry<T>(fn: () => Promise<T>, attempts = 2, delayMs = 250): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: unknown) {
+    if (attempts <= 1 || !isNetworkError(error)) {
+      throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return withRetry(fn, attempts - 1, delayMs * 1.5);
+  }
+}
+
 async function loadPortfolio(client: SupabaseClient, mode: Mode): Promise<PortfolioData> {
   const list = <T>(table: string) => {
     let query = client.from(table).select("*");
@@ -116,11 +143,16 @@ export async function getPublishedPortfolio(): Promise<PortfolioData> {
   }
 
   try {
-    const data = await loadPortfolio(client, "published");
+    const data = await withRetry(() => loadPortfolio(client, "published"), 2, 250);
     cacheLife("hours");
     return data;
   } catch (error) {
-    console.error("[portfolio] could not load published content:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    if (isNetworkError(error)) {
+      console.warn(`[portfolio] network unreachable (${message}); serving fallback content`);
+    } else {
+      console.warn(`[portfolio] could not load published content (${message}); serving fallback content`);
+    }
     // Keep the site usable during an outage and retry soon.
     cacheLife("minutes");
     return buildFallbackPortfolio("unavailable");
@@ -129,5 +161,11 @@ export async function getPublishedPortfolio(): Promise<PortfolioData> {
 
 /** Draft-inclusive content for the admin preview. Never cached. */
 export async function getPreviewPortfolio(client: SupabaseClient): Promise<PortfolioData> {
-  return loadPortfolio(client, "preview");
+  try {
+    return await loadPortfolio(client, "preview");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[portfolio] could not load preview content (${message}); serving fallback content`);
+    return buildFallbackPortfolio("unavailable");
+  }
 }

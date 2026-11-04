@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
 import { Download, Menu, X } from "lucide-react";
 import { LogoMark } from "@/components/navigation/logo-mark";
+import { SoundToggle } from "@/components/navigation/sound-toggle";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { useActiveSection } from "@/components/navigation/use-active-section";
 import { buttonClasses } from "@/components/ui/button";
@@ -102,6 +103,9 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
           </ul>
 
           <div className="flex items-center gap-1.5">
+            {/* Global sound toggle */}
+            <SoundToggle />
+
             {/* Theme toggle — always visible */}
             <ThemeToggle />
 
@@ -118,6 +122,7 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
               aria-expanded={open}
               aria-controls={menuId}
               aria-label={open ? "Close menu" : "Open menu"}
+              data-sound={open ? "close" : "open"}
               onClick={() => setOpen((v) => !v)}
             >
               {open ? <X className="size-5" aria-hidden /> : <Menu className="size-5" aria-hidden />}
@@ -148,8 +153,7 @@ export function SiteHeader({ name, initials, links, hasResume }: SiteHeaderProps
           {hasResume && (
             <li className="pt-6">
               <a href="/resume" className={buttonClasses("primary", "lg", "w-full")}>
-                <Download className="size-4" aria-hidden />
-                Download resume
+                <Download className="size-4" aria-hidden /> Download resume
               </a>
             </li>
           )}

@@ -50,6 +50,7 @@ export const DetailsPanel = forwardRef<HTMLHeadingElement, DetailsPanelProps>(fu
         <button
           type="button"
           onClick={onClose}
+          data-sound="none"
           aria-label="Close project details"
           className={cn(
             "-mt-1.5 -mr-2 grid size-8 shrink-0 place-items-center rounded-lg",

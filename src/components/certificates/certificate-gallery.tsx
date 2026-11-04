@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Award, BadgeCheck, ExternalLink, Eye, FileText, X } from "lucide-react";
+import { useSound } from "@/components/portfolio/sound-provider";
 import { buttonClasses } from "@/components/ui/button";
 import { cn, formatPartialDate } from "@/lib/utils/format";
 import type { PublicCertificate } from "@/types/portfolio";
@@ -18,15 +19,18 @@ export function CertificateGallery({ certificates }: { certificates: PublicCerti
   const [filter, setFilter] = useState(ALL);
   const [viewing, setViewing] = useState<PublicCertificate | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  const { playSound } = useSound();
 
   const visible = filter === ALL ? certificates : certificates.filter((c) => c.category === filter);
 
   function open(cert: PublicCertificate) {
+    playSound("open");
     setViewing(cert);
     dialog.current?.showModal();
   }
 
   function close() {
+    playSound("close");
     dialog.current?.close();
   }
 
@@ -129,6 +133,7 @@ export function CertificateGallery({ certificates }: { certificates: PublicCerti
               <button
                 type="button"
                 onClick={close}
+                data-sound="none"
                 className="grid size-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors dark:text-ink-2 dark:hover:bg-mist dark:hover:text-ink"
                 aria-label="Close viewer"
                 autoFocus
